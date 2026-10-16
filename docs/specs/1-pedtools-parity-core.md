@@ -3,7 +3,7 @@
 - **Ticket:** #1
 - **Branch:** `feat/1-pedtools-parity-core`
 - **Norma:** GOST DD-TDD v1.1.0
-- **Status:** Planejado
+- **Status:** Concluído
 
 ---
 
