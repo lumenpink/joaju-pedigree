@@ -1,0 +1,6 @@
+id,pai,mae,sex,fenotipo,proband,label
+1,0,0,M,wt,0,I-1 [Normal]
+2,0,0,F,afetado,0,I-2 [Afetada]
+3,1,2,M,het,0,II-1 [Portador]
+4,1,2,F,afetado,1,II-2 [Afetada]
+5,1,2,M,wt,0,II-3 [Normal]
