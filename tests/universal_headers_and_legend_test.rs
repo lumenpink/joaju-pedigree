@@ -84,3 +84,55 @@ fn test_auto_legend_shortcut() {
     assert!(svg.contains("Falecido"));
     assert!(svg.contains("Probando"));
 }
+
+#[test]
+fn test_mutation_mixed_case_headers_and_quotes() {
+    let block = "%% legend = c('Patriarca', 'Matriarca')\n\
+                 %% legend.type = c('empty_m', 'empty_f')\n\
+                 ID,Pai,MaE,SeXo,FaLeCiDo\n\
+                 10,0,0,M,DEAD\n\
+                 20,0,0,F,0\n";
+
+    let (ped, dir) = Ped::from_text(block).expect("Mixed case headers e aspas simples");
+    assert_eq!(ped.len(), 2);
+    let p10 = ped.get("10").unwrap();
+    assert_eq!(p10.sex, Sex::Male);
+    assert_eq!(p10.status, Status::Deceased);
+
+    let layout = ped.compute_layout(&LayoutOptions::default()).unwrap();
+    let render_opts = RenderOptions {
+        legend: Some(dir.to_legend_config()),
+        ..Default::default()
+    };
+    let svg = ped.render_svg(&layout, &render_opts);
+    assert!(svg.contains("Patriarca"));
+    assert!(svg.contains("Matriarca"));
+}
+
+#[test]
+fn test_mutation_auto_legend_only_present_traits() {
+    // Apenas homens saudáveis sem probando e sem falecido
+    let csv_data = "id,pai,mae,sexo\n\
+                    1,0,0,1\n\
+                    2,0,0,1\n";
+    let (ped, _) = Ped::from_text(csv_data).unwrap();
+    let layout = ped.compute_layout(&LayoutOptions::default()).unwrap();
+    let render_opts = RenderOptions {
+        auto_legend: true,
+        ..Default::default()
+    };
+    let svg = ped.render_svg(&layout, &render_opts);
+    assert!(svg.contains("Homem"));
+    assert!(
+        !svg.contains("Mulher"),
+        "Não deve conter Mulher se não houver mulheres"
+    );
+    assert!(
+        !svg.contains("Afetado"),
+        "Não deve conter Afetado se não houver afetados"
+    );
+    assert!(
+        !svg.contains("Falecido"),
+        "Não deve conter Falecido se não houver falecidos"
+    );
+}
