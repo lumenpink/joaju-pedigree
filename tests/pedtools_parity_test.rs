@@ -170,3 +170,38 @@ fn test_clinical_svg_render() {
         "Deve conter o card de legenda vetorial"
     );
 }
+
+#[test]
+fn test_mutation_singleton_pedigree() {
+    let csv_data = "id,pai,mae,sexo\n\
+                    99,0,0,0\n";
+    let ped = Ped::from_csv_str(csv_data).expect("Singleton válido");
+    assert_eq!(ped.len(), 1);
+    assert!(ped.founders().iter().any(|f| f.id == "99"));
+
+    let layout = ped
+        .compute_layout(&LayoutOptions::default())
+        .expect("Layout");
+    let svg = ped.render_svg(&layout, &RenderOptions::default());
+    assert!(
+        svg.contains("<polygon class=\"sym\""),
+        "Sexo desconhecido deve ser losango"
+    );
+}
+
+#[test]
+fn test_mutation_half_siblings() {
+    // Pai 1 tem filho 3 com Mãe 2, e filho 5 com Mãe 4
+    let csv_data = "id,pai,mae,sexo\n\
+                    1,0,0,1\n\
+                    2,0,0,2\n\
+                    3,1,2,1\n\
+                    4,0,0,2\n\
+                    5,1,4,2\n";
+    let ped = Ped::from_csv_str(csv_data).expect("CSV válido");
+    let sibs_of_3 = ped.siblings("3");
+    assert!(sibs_of_3.contains(&"5"), "5 é meio-irmão de 3 pelo pai 1");
+
+    let spouses_of_1 = ped.spouses("1");
+    assert_eq!(spouses_of_1.len(), 2, "Pai 1 deve ter 2 parceiras (2 e 4)");
+}
