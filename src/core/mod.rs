@@ -154,7 +154,8 @@ impl Ped {
             let sex_str = get_val(&record, &["sex", "sexo"]).unwrap_or_default();
             let sex = Sex::parse_str(&sex_str);
 
-            let status_str = get_val(&record, &["status", "falecido", "deceased"]).unwrap_or_default();
+            let status_str =
+                get_val(&record, &["status", "falecido", "deceased"]).unwrap_or_default();
             let status = Status::parse_str(&status_str);
 
             let proband = get_val(&record, &["proband", "probando"])

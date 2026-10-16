@@ -2,7 +2,11 @@ use clap::Parser;
 use pedigreers::prelude::*;
 
 #[derive(Parser, Debug)]
-#[command(name = "pedigreers", version, about = "Motor soberano de heredogramas clínicos em Rust")]
+#[command(
+    name = "pedigreers",
+    version,
+    about = "Motor soberano de heredogramas clínicos em Rust"
+)]
 struct Cli {
     #[arg(short, long)]
     input: Option<String>,

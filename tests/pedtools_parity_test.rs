@@ -12,7 +12,11 @@ fn test_csv_parser_and_founders() {
     let ped = Ped::from_csv_str(csv_data).expect("Falha ao parsear CSV");
     assert_eq!(ped.len(), 4);
 
-    let founders: Vec<&str> = ped.founders().into_iter().map(|ind| ind.id.as_str()).collect();
+    let founders: Vec<&str> = ped
+        .founders()
+        .into_iter()
+        .map(|ind| ind.id.as_str())
+        .collect();
     assert_eq!(founders, vec!["1", "2"]);
 
     let ind3 = ped.get("3").expect("Indivíduo 3 não encontrado");
@@ -84,8 +88,14 @@ fn test_consanguinity_detection() {
                     9,7,8,1\n";
 
     let ped = Ped::from_csv_str(csv_data).expect("CSV consanguíneo válido");
-    assert!(ped.is_consanguineous("7", "8"), "Primos deveriam ser detectados como consanguíneos");
-    assert!(!ped.is_consanguineous("1", "2"), "Fundadores não são consanguíneos");
+    assert!(
+        ped.is_consanguineous("7", "8"),
+        "Primos deveriam ser detectados como consanguíneos"
+    );
+    assert!(
+        !ped.is_consanguineous("1", "2"),
+        "Fundadores não são consanguíneos"
+    );
 }
 
 #[test]
@@ -98,7 +108,9 @@ fn test_generational_depth_layout() {
                     5,3,4,1\n";
 
     let ped = Ped::from_csv_str(csv_data).expect("CSV válido");
-    let layout = ped.compute_layout(&LayoutOptions::default()).expect("Layout computado");
+    let layout = ped
+        .compute_layout(&LayoutOptions::default())
+        .expect("Layout computado");
 
     // Gerações esperadas:
     // 1 e 2 = Geração 1
@@ -120,18 +132,41 @@ fn test_clinical_svg_render() {
                     4,1,2,2,0,0,0,0\n";
 
     let ped = Ped::from_csv_str(csv_data).expect("CSV válido");
-    let layout = ped.compute_layout(&LayoutOptions::default()).expect("Layout");
-    let svg = ped.render_svg(&layout, &RenderOptions { show_id: true, card_legend: true });
+    let layout = ped
+        .compute_layout(&LayoutOptions::default())
+        .expect("Layout");
+    let svg = ped.render_svg(
+        &layout,
+        &RenderOptions {
+            show_id: true,
+            card_legend: true,
+        },
+    );
 
     // Verificações no SVG gerado:
     assert!(svg.contains("<svg"), "Deve conter abertura de tag svg");
     assert!(svg.contains("</svg>"), "Deve conter fechamento de tag svg");
-    assert!(svg.contains("<rect"), "Deve desenhar retângulos para homens");
-    assert!(svg.contains("<circle"), "Deve desenhar círculos para mulheres");
+    assert!(
+        svg.contains("<rect"),
+        "Deve desenhar retângulos para homens"
+    );
+    assert!(
+        svg.contains("<circle"),
+        "Deve desenhar círculos para mulheres"
+    );
     // Seta de probando
-    assert!(svg.contains("proband-arrow") || svg.contains(">P<"), "Deve renderizar seta/marcador de probando");
+    assert!(
+        svg.contains("proband-arrow") || svg.contains(">P<"),
+        "Deve renderizar seta/marcador de probando"
+    );
     // Marcação de falecido (linha diagonal)
-    assert!(svg.contains("deceased-slash"), "Deve conter corte diagonal de falecido");
+    assert!(
+        svg.contains("deceased-slash"),
+        "Deve conter corte diagonal de falecido"
+    );
     // Card de legenda
-    assert!(svg.contains("LEGENDA") || svg.contains("card-legend"), "Deve conter o card de legenda vetorial");
+    assert!(
+        svg.contains("LEGENDA") || svg.contains("card-legend"),
+        "Deve conter o card de legenda vetorial"
+    );
 }

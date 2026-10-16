@@ -55,7 +55,11 @@ pub fn render_svg(ped: &Ped, layout: &PedLayout, options: &RenderOptions) -> Str
 
     // 1. Linhas de União e Descendência
     for u in &layout.unions {
-        let (x_start, x_end) = if u.x1 < u.x2 { (u.x1, u.x2) } else { (u.x2, u.x1) };
+        let (x_start, x_end) = if u.x1 < u.x2 {
+            (u.x1, u.x2)
+        } else {
+            (u.x2, u.x1)
+        };
         if u.is_consanguineous {
             svg.push_str(&format!(
                 "  <!-- União Consanguínea {} e {} -->\n",
@@ -308,7 +312,10 @@ fn render_legend_card(svg: &mut String, width: f64, height: f64) {
                 ));
                 svg.push_str(&format!(
                     "    <path class=\"proband-arrow\" d=\"M {:.1} {:.1} L {:.1} {:.1}\" />\n",
-                    ix - 16.0, iy + 16.0, ix - 9.0, iy + 9.0
+                    ix - 16.0,
+                    iy + 16.0,
+                    ix - 9.0,
+                    iy + 9.0
                 ));
                 svg.push_str(&format!(
                     "    <text class=\"proband-lbl\" font-size=\"10\" x=\"{:.1}\" y=\"{:.1}\">P</text>\n",
@@ -320,7 +327,9 @@ fn render_legend_card(svg: &mut String, width: f64, height: f64) {
 
         svg.push_str(&format!(
             "    <text class=\"legend-lbl\" x=\"{:.1}\" y=\"{:.1}\">{}</text>\n",
-            ix, card_y + 64.0, label
+            ix,
+            card_y + 64.0,
+            label
         ));
     }
 

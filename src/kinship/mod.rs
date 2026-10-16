@@ -5,9 +5,7 @@ pub fn find_children<'a>(ped: &'a Ped, id: &str) -> Vec<&'a str> {
     ped.order
         .iter()
         .filter_map(|child_id| ped.members.get(child_id))
-        .filter(|child| {
-            child.fid.as_deref() == Some(id) || child.mid.as_deref() == Some(id)
-        })
+        .filter(|child| child.fid.as_deref() == Some(id) || child.mid.as_deref() == Some(id))
         .map(|child| child.id.as_str())
         .collect()
 }
