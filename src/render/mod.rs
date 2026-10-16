@@ -185,11 +185,7 @@ pub fn render_svg(ped: &Ped, layout: &PedLayout, options: &RenderOptions) -> Str
 }
 
 fn render_individual(svg: &mut String, ind: &Individual, x: f64, y: f64, show_id: bool) {
-    let sym_class = if ind.affected == 1 {
-        "sym-aff"
-    } else {
-        "sym"
-    };
+    let sym_class = if ind.affected == 1 { "sym-aff" } else { "sym" };
 
     match ind.sex {
         Sex::Male => {
@@ -224,13 +220,17 @@ fn render_individual(svg: &mut String, ind: &Individual, x: f64, y: f64, show_id
             // Meio círculo preenchido à esquerda
             svg.push_str(&format!(
                 "  <path d=\"M {:.1} {:.1} A 14 14 0 0 0 {:.1} {:.1} Z\" fill=\"#000000\" />\n",
-                x, y - 14.0, x, y + 14.0
+                x,
+                y - 14.0,
+                x,
+                y + 14.0
             ));
         } else {
             // Meio quadrado preenchido à esquerda
             svg.push_str(&format!(
                 "  <rect x=\"{:.1}\" y=\"{:.1}\" width=\"14\" height=\"28\" fill=\"#000000\" />\n",
-                x - 14.0, y - 14.0
+                x - 14.0,
+                y - 14.0
             ));
         }
     }
@@ -452,7 +452,10 @@ fn render_legend_card(
                 ));
                 svg.push_str(&format!(
                     "    <path d=\"M {:.1} {:.1} A 8 8 0 0 0 {:.1} {:.1} Z\" fill=\"#000\" />\n",
-                    ix, iy - 8.0, ix, iy + 8.0
+                    ix,
+                    iy - 8.0,
+                    ix,
+                    iy + 8.0
                 ));
             }
             LegendSymbolType::Suspect => {
@@ -462,7 +465,8 @@ fn render_legend_card(
                 ));
                 svg.push_str(&format!(
                     "    <text class=\"lbl\" font-size=\"12\" x=\"{:.1}\" y=\"{:.1}\">?</text>\n",
-                    ix, iy + 4.0
+                    ix,
+                    iy + 4.0
                 ));
             }
             LegendSymbolType::Deceased => {
@@ -482,7 +486,10 @@ fn render_legend_card(
                 ));
                 svg.push_str(&format!(
                     "    <path class=\"proband-arrow\" d=\"M {:.1} {:.1} L {:.1} {:.1}\" />\n",
-                    ix - 16.0, iy + 16.0, ix - 9.0, iy + 9.0
+                    ix - 16.0,
+                    iy + 16.0,
+                    ix - 9.0,
+                    iy + 9.0
                 ));
                 svg.push_str(&format!(
                     "    <text class=\"proband-lbl\" font-size=\"10\" x=\"{:.1}\" y=\"{:.1}\">P</text>\n",

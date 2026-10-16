@@ -166,8 +166,13 @@ impl Ped {
                 get_val(&record, &["status", "falecido", "deceased"]).unwrap_or_default();
             let status = Status::parse_str(&status_str);
 
-            let proband_val = get_val(&record, &["proband", "probando", "probanda"]).unwrap_or_default().to_uppercase();
-            let proband = matches!(proband_val.as_str(), "1" | "SIM" | "S" | "TRUE" | "PROBAND" | "PROBANDO" | "PROBANDA" | "P");
+            let proband_val = get_val(&record, &["proband", "probando", "probanda"])
+                .unwrap_or_default()
+                .to_uppercase();
+            let proband = matches!(
+                proband_val.as_str(),
+                "1" | "SIM" | "S" | "TRUE" | "PROBAND" | "PROBANDO" | "PROBANDA" | "P"
+            );
 
             let mut affected: u8 = 0;
             let mut carrier: bool = false;
@@ -178,10 +183,21 @@ impl Ped {
                 let p_clean = pheno.to_lowercase();
                 if matches!(
                     p_clean.as_str(),
-                    "1" | "hom" | "homozigoto" | "afetado" | "doente" | "mut" | "affected" | "yes" | "sim" | "s"
+                    "1" | "hom"
+                        | "homozigoto"
+                        | "afetado"
+                        | "doente"
+                        | "mut"
+                        | "affected"
+                        | "yes"
+                        | "sim"
+                        | "s"
                 ) {
                     affected = 1;
-                } else if matches!(p_clean.as_str(), "het" | "heterozigoto" | "portador" | "carrier") {
+                } else if matches!(
+                    p_clean.as_str(),
+                    "het" | "heterozigoto" | "portador" | "carrier"
+                ) {
                     carrier = true;
                 } else if matches!(p_clean.as_str(), "?" | "suspeita" | "suspect" | "duvida") {
                     suspect = true;

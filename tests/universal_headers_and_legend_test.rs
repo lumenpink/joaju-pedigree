@@ -43,9 +43,13 @@ fn test_directives_and_explicit_joaju_legend() {
     assert_eq!(ped.len(), 2);
     assert!(directives.has_legend());
 
-    let layout = ped.compute_layout(&LayoutOptions::default()).expect("Layout");
-    let mut render_opts = RenderOptions::default();
-    render_opts.legend = Some(directives.to_legend_config());
+    let layout = ped
+        .compute_layout(&LayoutOptions::default())
+        .expect("Layout");
+    let render_opts = RenderOptions {
+        legend: Some(directives.to_legend_config()),
+        ..Default::default()
+    };
 
     let svg = ped.render_svg(&layout, &render_opts);
     assert!(svg.contains("Normal M"));
@@ -62,10 +66,14 @@ fn test_auto_legend_shortcut() {
                     3,1,2,1,0,1,1,0\n";
 
     let (ped, _) = Ped::from_text(csv_data).expect("CSV válido");
-    let layout = ped.compute_layout(&LayoutOptions::default()).expect("Layout");
+    let layout = ped
+        .compute_layout(&LayoutOptions::default())
+        .expect("Layout");
 
-    let mut render_opts = RenderOptions::default();
-    render_opts.auto_legend = true;
+    let render_opts = RenderOptions {
+        auto_legend: true,
+        ..Default::default()
+    };
 
     let svg = ped.render_svg(&layout, &render_opts);
     // Como a família tem Homem, Mulher, Afetado, Portador, Falecido e Probando, todos devem estar na legenda automaticamente:
