@@ -8,7 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Parser universal de CSV com normalização de termos em português e inglês (`pai`/`fid`, `mae`/`mid`, `sexo`/`sex`, etc.).
+- Suporte universal a todos os cabeçalhos e sinônimos originais do pedtools e Joaju (`individual`/`id`, `father`/`dadid`/`fid`/`pai`, `mother`/`momid`/`mid`/`mae`, `fenotipo`/`afetado`/`affected`).
+- Parsing e extração nativa de diretivas `%% chave = valor` embutidas em blocos de texto/markdown.
+- Sistema de legendas com paridade estrita aos símbolos do Joaju (`empty_m`, `empty_f`, `sq_half`, `circ_half`, `sq_solid`, `circ_solid`, `suspect`, `deceased`, `proband`).
+- Atalho inteligente de auto-legenda (`auto_legend = true` / flag `-l` na CLI) sintetizando automaticamente apenas os fenótipos e traços presentes na família.
 - Validação de integridade biológica e detecção de ciclos acíclicos em grafos genealógicos via 3-color DFS.
 - Consultas completas de parentesco: `parents`, `children`, `spouses`, `siblings` e `ancestors`.
 - Detecção automática de uniões consanguíneas via interseção de conjuntos de ancestrais comuns.
