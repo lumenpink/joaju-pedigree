@@ -80,9 +80,16 @@ impl Default for RenderOptions {
 }
 
 pub fn render_svg(ped: &Ped, layout: &PedLayout, options: &RenderOptions) -> String {
+    let has_card = options.card_legend || options.auto_legend || options.legend.is_some();
+    let actual_width = if has_card {
+        layout.width.max(420.0)
+    } else {
+        layout.width
+    };
+
     let mut svg = format!(
         "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 {:.1} {:.1}\" width=\"{:.1}\" height=\"{:.1}\">\n",
-        layout.width, layout.height, layout.width, layout.height
+        actual_width, layout.height, actual_width, layout.height
     );
 
     // CSS Stylesheet
@@ -93,6 +100,8 @@ pub fn render_svg(ped: &Ped, layout: &PedLayout, options: &RenderOptions) -> Str
     svg.push_str("    .consanguinity-line { stroke: #000000; stroke-width: 2.0; }\n");
     svg.push_str("    .deceased-slash { stroke: #000000; stroke-width: 2.2; }\n");
     svg.push_str("    .proband-arrow { stroke: #000000; stroke-width: 2.2; fill: none; }\n");
+    svg.push_str("    .twin-line { stroke: #000000; stroke-width: 2.0; stroke-linecap: round; }\n");
+    svg.push_str("    .mz-bar { stroke: #000000; stroke-width: 2.0; stroke-linecap: round; }\n");
     svg.push_str("    .lbl { font-family: 'Liberation Sans', sans-serif; font-size: 13px; font-weight: bold; text-anchor: middle; fill: #222222; }\n");
     svg.push_str("    .proband-lbl { font-family: 'Liberation Sans', sans-serif; font-size: 13px; font-weight: bold; fill: #000000; }\n");
     svg.push_str("    .legend-title { font-family: 'Liberation Sans', sans-serif; font-size: 13px; font-weight: bold; text-anchor: middle; fill: #333333; }\n");
@@ -155,12 +164,78 @@ pub fn render_svg(ped: &Ped, layout: &PedLayout, options: &RenderOptions) -> Str
                     ));
                 }
 
-                // Hastes individuais descendo para cada filho
+                // Agrupa filhos por twin_group
+                let mut single_children = Vec::new();
+                let mut twin_clusters: std::collections::BTreeMap<String, Vec<String>> =
+                    std::collections::BTreeMap::new();
+
                 for cid in &u.children {
-                    if let Some(coord) = layout.coords.get(cid) {
+                    if let Some(ind) = ped.members.get(cid) {
+                        if let Some(ref tg) = ind.twin_group {
+                            twin_clusters
+                                .entry(tg.clone())
+                                .or_default()
+                                .push(cid.clone());
+                        } else {
+                            single_children.push(cid.clone());
+                        }
+                    } else {
+                        single_children.push(cid.clone());
+                    }
+                }
+
+                // 1. Hastes individuais normais
+                for cid in single_children {
+                    if let Some(coord) = layout.coords.get(&cid) {
                         svg.push_str(&format!(
                             "  <line class=\"kin-line\" x1=\"{:.1}\" y1=\"{:.1}\" x2=\"{:.1}\" y2=\"{:.1}\" />\n",
                             coord.x, sib_bar_y, coord.x, coord.y - 14.0
+                        ));
+                    }
+                }
+
+                // 2. Grupos de Gêmeos / Ninhadas (Fan-out a partir de vértice comum)
+                for (_tg, member_ids) in twin_clusters {
+                    let member_coords: Vec<&crate::layout::NodeCoord> = member_ids
+                        .iter()
+                        .filter_map(|id| layout.coords.get(id))
+                        .collect();
+
+                    if member_coords.is_empty() {
+                        continue;
+                    }
+
+                    // Vértice superior único na barra de irmãos
+                    let sum_x: f64 = member_coords.iter().map(|c| c.x).sum();
+                    let vertex_x = sum_x / (member_coords.len() as f64);
+                    let vertex_y = sib_bar_y;
+
+                    // Hastes em leque divergentes
+                    for c in &member_coords {
+                        svg.push_str(&format!(
+                            "  <line class=\"kin-line twin-line\" x1=\"{:.1}\" y1=\"{:.1}\" x2=\"{:.1}\" y2=\"{:.1}\" />\n",
+                            vertex_x, vertex_y, c.x, c.y - 14.0
+                        ));
+                    }
+
+                    // Se for monozigótico (MZ) e tiver 2 membros, desenha barra de união horizontal
+                    let is_mz = member_ids.iter().any(|id| {
+                        ped.members
+                            .get(id)
+                            .map(|i| i.twin_type == crate::core::TwinType::Monozygotic)
+                            .unwrap_or(false)
+                    });
+
+                    if is_mz && member_coords.len() == 2 {
+                        let c1 = member_coords[0];
+                        let c2 = member_coords[1];
+                        let t = 0.45;
+                        let bar_y = vertex_y + t * (c1.y - 14.0 - vertex_y);
+                        let bar_x1 = vertex_x + t * (c1.x - vertex_x);
+                        let bar_x2 = vertex_x + t * (c2.x - vertex_x);
+                        svg.push_str(&format!(
+                            "  <!-- Barra Monozigótica MZ -->\n  <line class=\"kin-line mz-bar\" x1=\"{:.1}\" y1=\"{:.1}\" x2=\"{:.1}\" y2=\"{:.1}\" />\n",
+                            bar_x1, bar_y, bar_x2, bar_y
                         ));
                     }
                 }
@@ -176,8 +251,8 @@ pub fn render_svg(ped: &Ped, layout: &PedLayout, options: &RenderOptions) -> Str
     }
 
     // 3. Card de Legenda Vetorial (se solicitado ou se auto_legend estiver ativo)
-    if options.card_legend || options.auto_legend || options.legend.is_some() {
-        render_legend_card(&mut svg, ped, layout.width, layout.height, options);
+    if has_card {
+        render_legend_card(&mut svg, ped, actual_width, layout.height, options);
     }
 
     svg.push_str("</svg>\n");

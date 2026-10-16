@@ -101,3 +101,39 @@ id,pai,mae,sex
     assert_eq!(ind5.twin_type, TwinType::Dizygotic);
     assert_eq!(ind6.twin_type, TwinType::Dizygotic);
 }
+
+#[test]
+fn test_mutation_legend_card_never_exceeds_viewbox() {
+    let csv = "id,pai,mae,sex\n1,0,0,M\n2,0,0,F\n";
+    let ped = Ped::from_csv_str(csv).unwrap();
+    let layout = PedLayout::compute(&ped, &LayoutOptions::default());
+    let svg = render_svg(
+        &ped,
+        &layout,
+        &RenderOptions {
+            card_legend: true,
+            ..Default::default()
+        },
+    );
+
+    // Extrai a largura do viewBox
+    let mut width = 0.0;
+    let prefix = "viewBox=\"0 0 ";
+    for line in svg.lines() {
+        if let Some(pos) = line.find(prefix) {
+            let rest = &line[pos + prefix.len()..];
+            if let Some(space) = rest.find(' ') {
+                if let Ok(w) = rest[..space].parse::<f64>() {
+                    width = w;
+                    break;
+                }
+            }
+        }
+    }
+
+    assert!(
+        width >= 420.0,
+        "Largura do viewBox ({}) deve acomodar a legenda (>= 420px)",
+        width
+    );
+}

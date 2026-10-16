@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280.0 550.0" width="280.0" height="550.0">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440.0 550.0" width="440.0" height="550.0">
   <style>
     .sym { stroke: #000000; stroke-width: 2.2; fill: #ffffff; }
     .sym-aff { stroke: #000000; stroke-width: 2.2; fill: #000000; }
@@ -6,6 +6,8 @@
     .consanguinity-line { stroke: #000000; stroke-width: 2.0; }
     .deceased-slash { stroke: #000000; stroke-width: 2.2; }
     .proband-arrow { stroke: #000000; stroke-width: 2.2; fill: none; }
+    .twin-line { stroke: #000000; stroke-width: 2.0; stroke-linecap: round; }
+    .mz-bar { stroke: #000000; stroke-width: 2.0; stroke-linecap: round; }
     .lbl { font-family: 'Liberation Sans', sans-serif; font-size: 13px; font-weight: bold; text-anchor: middle; fill: #222222; }
     .proband-lbl { font-family: 'Liberation Sans', sans-serif; font-size: 13px; font-weight: bold; fill: #000000; }
     .legend-title { font-family: 'Liberation Sans', sans-serif; font-size: 13px; font-weight: bold; text-anchor: middle; fill: #333333; }
@@ -56,21 +58,21 @@
   <text class="lbl" x="115.0" y="365.0">10</text>
   <!-- Card de Legenda Vetorial Integrado -->
   <g class="card-legend">
-    <rect x="20.0" y="460.0" width="380.0" height="75.0" rx="6" fill="#fcfcfc" stroke="#cccccc" stroke-width="1.2" />
-    <text class="legend-title" x="210.0" y="478.0">LEGENDA CLÍNICA (NSGC/ACMG)</text>
-    <line x1="40.0" y1="484.0" x2="380.0" y2="484.0" stroke="#e0e0e0" stroke-width="1" />
+    <rect x="20.0" y="460.0" width="400.0" height="75.0" rx="6" fill="#fcfcfc" stroke="#cccccc" stroke-width="1.2" />
+    <text class="legend-title" x="220.0" y="478.0">LEGENDA CLÍNICA (NSGC/ACMG)</text>
+    <line x1="40.0" y1="484.0" x2="400.0" y2="484.0" stroke="#e0e0e0" stroke-width="1" />
     <rect class="sym" x="37.0" y="496.0" width="16" height="16" />
     <text class="legend-lbl" x="45.0" y="524.0">Homem</text>
-    <circle class="sym" cx="115.0" cy="504.0" r="8" />
-    <text class="legend-lbl" x="115.0" y="524.0">Mulher</text>
-    <rect class="sym-aff" x="177.0" y="496.0" width="16" height="16" />
-    <text class="legend-lbl" x="185.0" y="524.0">Afetado</text>
-    <circle class="sym" cx="255.0" cy="504.0" r="8" />
-    <path d="M 255.0 496.0 A 8 8 0 0 0 255.0 512.0 Z" fill="#000" />
-    <text class="legend-lbl" x="255.0" y="524.0">Portador</text>
-    <rect class="sym" x="317.0" y="496.0" width="16" height="16" />
-    <path class="proband-arrow" d="M 309.0 520.0 L 316.0 513.0" />
-    <text class="proband-lbl" font-size="10" x="305.0" y="522.0">P</text>
-    <text class="legend-lbl" x="325.0" y="524.0">Probando</text>
+    <circle class="sym" cx="119.0" cy="504.0" r="8" />
+    <text class="legend-lbl" x="119.0" y="524.0">Mulher</text>
+    <rect class="sym-aff" x="185.0" y="496.0" width="16" height="16" />
+    <text class="legend-lbl" x="193.0" y="524.0">Afetado</text>
+    <circle class="sym" cx="267.0" cy="504.0" r="8" />
+    <path d="M 267.0 496.0 A 8 8 0 0 0 267.0 512.0 Z" fill="#000" />
+    <text class="legend-lbl" x="267.0" y="524.0">Portador</text>
+    <rect class="sym" x="333.0" y="496.0" width="16" height="16" />
+    <path class="proband-arrow" d="M 325.0 520.0 L 332.0 513.0" />
+    <text class="proband-lbl" font-size="10" x="321.0" y="522.0">P</text>
+    <text class="legend-lbl" x="341.0" y="524.0">Probando</text>
   </g>
 </svg>

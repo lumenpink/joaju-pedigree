@@ -57,6 +57,27 @@ impl Status {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum TwinType {
+    #[default]
+    None = 0,
+    Monozygotic = 1,
+    Dizygotic = 2,
+    Unknown = 3,
+}
+
+impl TwinType {
+    pub fn parse_str(s: &str) -> Self {
+        let clean = s.trim().to_lowercase();
+        match clean.as_str() {
+            "1" | "mz" | "monozygotic" | "monozigotico" | "identico" => TwinType::Monozygotic,
+            "2" | "dz" | "dizygotic" | "dizigotico" | "fraterno" => TwinType::Dizygotic,
+            "3" | "?" | "unknown" | "desconhecido" => TwinType::Unknown,
+            _ => TwinType::None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Individual {
     pub id: String,
@@ -68,6 +89,8 @@ pub struct Individual {
     pub affected: u8,
     pub carrier: bool,
     pub suspect: bool,
+    pub twin_group: Option<String>,
+    pub twin_type: TwinType,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -219,6 +242,32 @@ impl Ped {
                 }
             }
 
+            let twin_group = get_val(
+                &record,
+                &[
+                    "twin_group",
+                    "twin",
+                    "gemelar",
+                    "gemeo",
+                    "parto",
+                    "litter",
+                    "relation",
+                ],
+            );
+            let mut twin_type = get_val(&record, &["twin_type", "zygosity", "zigosidade"])
+                .map(|t| TwinType::parse_str(&t))
+                .unwrap_or(TwinType::None);
+
+            if let Some(ref tg) = twin_group {
+                if twin_type == TwinType::None {
+                    if tg.to_lowercase().starts_with("mz") {
+                        twin_type = TwinType::Monozygotic;
+                    } else {
+                        twin_type = TwinType::Dizygotic;
+                    }
+                }
+            }
+
             ped.add(Individual {
                 id,
                 fid,
@@ -229,7 +278,20 @@ impl Ped {
                 affected,
                 carrier,
                 suspect,
+                twin_group,
+                twin_type,
             })?;
+        }
+
+        // Aplica diretivas de gêmeos (%% twin / %% litter)
+        for (idx, tw_dir) in directives.twins.iter().enumerate() {
+            let group_name = format!("tw_dir_{}", idx);
+            for id in &tw_dir.ids {
+                if let Some(ind) = ped.members.get_mut(id) {
+                    ind.twin_group = Some(group_name.clone());
+                    ind.twin_type = tw_dir.twin_type;
+                }
+            }
         }
 
         // Validação de ciclos (DAG check com 3-color DFS)

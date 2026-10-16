@@ -125,14 +125,15 @@ impl PedLayout {
             gen_groups.entry(g).or_default().push(id.clone());
         }
 
-        // 3. Atribui coordenadas (X, Y)
+        // 3. Atribui coordenadas (X, Y) com agrupamento de cônjuges adjacentes
         let mut coords = HashMap::new();
         let mut max_x: f64 = 100.0;
         let max_gen = gen_groups.keys().copied().max().unwrap_or(1);
 
         for (gen, ids) in &gen_groups {
+            let ordered_ids = order_generation_members(ped, ids);
             let y = options.top_margin + ((*gen as f64) - 1.0) * options.y_spacing;
-            for (i, id) in ids.iter().enumerate() {
+            for (i, id) in ordered_ids.iter().enumerate() {
                 let x = options.left_margin + (i as f64) * options.x_spacing;
                 if x > max_x {
                     max_x = x;
@@ -186,7 +187,7 @@ impl PedLayout {
             }
         }
 
-        let width = max_x + options.left_margin + 50.0;
+        let width = (max_x + options.left_margin + 50.0).max(440.0);
         let height = options.top_margin + (max_gen as f64) * options.y_spacing + 120.0;
 
         Self {
@@ -196,4 +197,70 @@ impl PedLayout {
             height,
         }
     }
+}
+
+fn order_generation_members(ped: &Ped, ids: &[String]) -> Vec<String> {
+    let id_set: std::collections::HashSet<&str> = ids.iter().map(|s| s.as_str()).collect();
+    let mut spouse_map: HashMap<String, Vec<String>> = HashMap::new();
+
+    for id in ids {
+        for spouse in ped.spouses(id) {
+            if id_set.contains(spouse) {
+                spouse_map
+                    .entry(id.clone())
+                    .or_default()
+                    .push(spouse.to_string());
+            }
+        }
+    }
+
+    let mut visited: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut ordered: Vec<String> = Vec::new();
+
+    for id in ids {
+        if visited.contains(id) {
+            continue;
+        }
+
+        let spouses = spouse_map.get(id).cloned().unwrap_or_default();
+        let unvisited_spouses: Vec<String> = spouses
+            .into_iter()
+            .filter(|s| !visited.contains(s))
+            .collect();
+
+        if unvisited_spouses.is_empty() {
+            visited.insert(id.clone());
+            ordered.push(id.clone());
+        } else if unvisited_spouses.len() == 1 {
+            let s = &unvisited_spouses[0];
+            visited.insert(id.clone());
+            visited.insert(s.clone());
+            if ped.members[id].sex == crate::core::Sex::Male {
+                ordered.push(id.clone());
+                ordered.push(s.clone());
+            } else {
+                ordered.push(s.clone());
+                ordered.push(id.clone());
+            }
+        } else {
+            visited.insert(id.clone());
+            for s in &unvisited_spouses {
+                visited.insert(s.clone());
+            }
+
+            let mid = unvisited_spouses.len() / 2;
+            let left_spouses = &unvisited_spouses[..mid];
+            let right_spouses = &unvisited_spouses[mid..];
+
+            for s in left_spouses {
+                ordered.push(s.clone());
+            }
+            ordered.push(id.clone());
+            for s in right_spouses {
+                ordered.push(s.clone());
+            }
+        }
+    }
+
+    ordered
 }

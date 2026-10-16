@@ -1,11 +1,19 @@
+use crate::core::TwinType;
 use crate::render::{LegendConfig, LegendItem, LegendSymbolType};
 use std::collections::HashMap;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TwinDirective {
+    pub ids: Vec<String>,
+    pub twin_type: TwinType,
+}
 
 #[derive(Debug, Clone, Default)]
 pub struct PedDirectives {
     pub raw: HashMap<String, String>,
     pub legend_labels: Option<Vec<String>>,
     pub legend_types: Option<Vec<String>>,
+    pub twins: Vec<TwinDirective>,
 }
 
 impl PedDirectives {
@@ -48,6 +56,45 @@ pub fn extract_directives(text: &str) -> (PedDirectives, String) {
                 } else if lower_key == "legend.type" {
                     let parsed_list = parse_c_vector(&val);
                     directives.legend_types = Some(parsed_list);
+                } else if lower_key.starts_with("twin")
+                    || lower_key.starts_with("gemeo")
+                    || lower_key.starts_with("gemelar")
+                {
+                    let parts: Vec<String> = val
+                        .split(',')
+                        .map(|s| s.trim().to_string())
+                        .filter(|s| !s.is_empty())
+                        .collect();
+                    if parts.len() >= 2 {
+                        let last = parts.last().unwrap().to_lowercase();
+                        let (ids, t_type) = if matches!(
+                            last.as_str(),
+                            "mz" | "dz" | "unknown" | "?" | "monozygotic" | "dizygotic"
+                        ) {
+                            (
+                                parts[..parts.len() - 1].to_vec(),
+                                TwinType::parse_str(&last),
+                            )
+                        } else {
+                            (parts.clone(), TwinType::Dizygotic)
+                        };
+                        directives.twins.push(TwinDirective {
+                            ids,
+                            twin_type: t_type,
+                        });
+                    }
+                } else if lower_key.starts_with("litter") || lower_key.starts_with("ninhada") {
+                    let ids: Vec<String> = val
+                        .split(',')
+                        .map(|s| s.trim().to_string())
+                        .filter(|s| !s.is_empty())
+                        .collect();
+                    if !ids.is_empty() {
+                        directives.twins.push(TwinDirective {
+                            ids,
+                            twin_type: TwinType::Dizygotic,
+                        });
+                    }
                 }
                 directives.raw.insert(lower_key, val);
             }
