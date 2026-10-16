@@ -140,6 +140,7 @@ fn test_clinical_svg_render() {
         &RenderOptions {
             show_id: true,
             card_legend: true,
+            ..Default::default()
         },
     );
 

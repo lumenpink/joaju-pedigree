@@ -18,10 +18,54 @@ impl From<Sex> for ClinicalSymbol {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LegendSymbolType {
+    EmptyM,
+    EmptyF,
+    SqHalf,
+    CircHalf,
+    SqSolid,
+    CircSolid,
+    Suspect,
+    Proband,
+    Deceased,
+}
+
+impl LegendSymbolType {
+    pub fn parse_str(s: &str) -> Self {
+        let clean = s.trim().to_lowercase();
+        match clean.as_str() {
+            "empty_m" | "sq_empty" => LegendSymbolType::EmptyM,
+            "empty_f" | "circ_empty" => LegendSymbolType::EmptyF,
+            "half" | "sq_half" => LegendSymbolType::SqHalf,
+            "circ_half" => LegendSymbolType::CircHalf,
+            "solid" | "sq_solid" => LegendSymbolType::SqSolid,
+            "circ_solid" => LegendSymbolType::CircSolid,
+            "suspect" | "sq_suspect" | "circ_suspect" => LegendSymbolType::Suspect,
+            "proband" | "prob" => LegendSymbolType::Proband,
+            "deceased" | "dec" => LegendSymbolType::Deceased,
+            _ => LegendSymbolType::EmptyM,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct LegendItem {
+    pub symbol: LegendSymbolType,
+    pub label: String,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct LegendConfig {
+    pub items: Vec<LegendItem>,
+}
+
 #[derive(Debug, Clone)]
 pub struct RenderOptions {
     pub show_id: bool,
     pub card_legend: bool,
+    pub legend: Option<LegendConfig>,
+    pub auto_legend: bool,
 }
 
 impl Default for RenderOptions {
@@ -29,6 +73,8 @@ impl Default for RenderOptions {
         Self {
             show_id: true,
             card_legend: true,
+            legend: None,
+            auto_legend: false,
         }
     }
 }
@@ -129,9 +175,9 @@ pub fn render_svg(ped: &Ped, layout: &PedLayout, options: &RenderOptions) -> Str
         }
     }
 
-    // 3. Card de Legenda Vetorial (se solicitado)
-    if options.card_legend {
-        render_legend_card(&mut svg, layout.width, layout.height);
+    // 3. Card de Legenda Vetorial (se solicitado ou se auto_legend estiver ativo)
+    if options.card_legend || options.auto_legend || options.legend.is_some() {
+        render_legend_card(&mut svg, ped, layout.width, layout.height, options);
     }
 
     svg.push_str("</svg>\n");
@@ -139,7 +185,11 @@ pub fn render_svg(ped: &Ped, layout: &PedLayout, options: &RenderOptions) -> Str
 }
 
 fn render_individual(svg: &mut String, ind: &Individual, x: f64, y: f64, show_id: bool) {
-    let sym_class = if ind.affected == 1 { "sym-aff" } else { "sym" };
+    let sym_class = if ind.affected == 1 {
+        "sym-aff"
+    } else {
+        "sym"
+    };
 
     match ind.sex {
         Sex::Male => {
@@ -168,12 +218,21 @@ fn render_individual(svg: &mut String, ind: &Individual, x: f64, y: f64, show_id
         }
     }
 
-    // Portador (Carrier - ponto central)
+    // Portador (Carrier - meio preenchimento ou ponto central)
     if ind.carrier && ind.affected == 0 {
-        svg.push_str(&format!(
-            "  <circle cx=\"{:.1}\" cy=\"{:.1}\" r=\"4.5\" fill=\"#000000\" />\n",
-            x, y
-        ));
+        if ind.sex == Sex::Female {
+            // Meio círculo preenchido à esquerda
+            svg.push_str(&format!(
+                "  <path d=\"M {:.1} {:.1} A 14 14 0 0 0 {:.1} {:.1} Z\" fill=\"#000000\" />\n",
+                x, y - 14.0, x, y + 14.0
+            ));
+        } else {
+            // Meio quadrado preenchido à esquerda
+            svg.push_str(&format!(
+                "  <rect x=\"{:.1}\" y=\"{:.1}\" width=\"14\" height=\"28\" fill=\"#000000\" />\n",
+                x - 14.0, y - 14.0
+            ));
+        }
     }
 
     // Caso Suspeito ('?')
@@ -226,7 +285,102 @@ fn render_individual(svg: &mut String, ind: &Individual, x: f64, y: f64, show_id
     }
 }
 
-fn render_legend_card(svg: &mut String, width: f64, height: f64) {
+fn render_legend_card(
+    svg: &mut String,
+    ped: &Ped,
+    width: f64,
+    height: f64,
+    options: &RenderOptions,
+) {
+    let items: Vec<LegendItem> = if let Some(ref config) = options.legend {
+        config.items.clone()
+    } else if options.auto_legend {
+        // Gera a legenda automaticamente a partir dos traços detectados na família
+        let mut auto_items = Vec::new();
+        let has_male = ped.members.values().any(|i| i.sex == Sex::Male);
+        let has_female = ped.members.values().any(|i| i.sex == Sex::Female);
+        let has_aff = ped.members.values().any(|i| i.affected > 0);
+        let has_carrier = ped.members.values().any(|i| i.carrier);
+        let has_suspect = ped.members.values().any(|i| i.suspect);
+        let has_dec = ped.members.values().any(|i| i.status == Status::Deceased);
+        let has_proband = ped.members.values().any(|i| i.proband);
+
+        if has_male {
+            auto_items.push(LegendItem {
+                symbol: LegendSymbolType::EmptyM,
+                label: "Homem".into(),
+            });
+        }
+        if has_female {
+            auto_items.push(LegendItem {
+                symbol: LegendSymbolType::EmptyF,
+                label: "Mulher".into(),
+            });
+        }
+        if has_aff {
+            auto_items.push(LegendItem {
+                symbol: LegendSymbolType::SqSolid,
+                label: "Afetado".into(),
+            });
+        }
+        if has_carrier {
+            auto_items.push(LegendItem {
+                symbol: LegendSymbolType::CircHalf,
+                label: "Portador".into(),
+            });
+        }
+        if has_suspect {
+            auto_items.push(LegendItem {
+                symbol: LegendSymbolType::Suspect,
+                label: "Investigação".into(),
+            });
+        }
+        if has_dec {
+            auto_items.push(LegendItem {
+                symbol: LegendSymbolType::Deceased,
+                label: "Falecido".into(),
+            });
+        }
+        if has_proband {
+            auto_items.push(LegendItem {
+                symbol: LegendSymbolType::Proband,
+                label: "Probando".into(),
+            });
+        }
+        auto_items
+    } else {
+        vec![
+            LegendItem {
+                symbol: LegendSymbolType::EmptyM,
+                label: "Homem".into(),
+            },
+            LegendItem {
+                symbol: LegendSymbolType::EmptyF,
+                label: "Mulher".into(),
+            },
+            LegendItem {
+                symbol: LegendSymbolType::SqSolid,
+                label: "Afetado".into(),
+            },
+            LegendItem {
+                symbol: LegendSymbolType::CircHalf,
+                label: "Portador".into(),
+            },
+            LegendItem {
+                symbol: LegendSymbolType::Deceased,
+                label: "Falecido".into(),
+            },
+            LegendItem {
+                symbol: LegendSymbolType::Proband,
+                label: "Probando".into(),
+            },
+        ]
+    };
+
+    if items.is_empty() {
+        return;
+    }
+
     let card_w = (width - 40.0).max(380.0);
     let card_h = 75.0;
     let card_x = 20.0;
@@ -251,51 +405,67 @@ fn render_legend_card(svg: &mut String, width: f64, height: f64) {
         card_y + 24.0
     ));
 
-    // Itens da Legenda
-    let items = [
-        ("M", "Homem"),
-        ("F", "Mulher"),
-        ("Aff", "Afetado"),
-        ("Car", "Portador"),
-        ("Dec", "Falecido"),
-        ("Prob", "Probando"),
-    ];
-
     let step = (card_w - 30.0) / (items.len() as f64);
-    for (i, (sym_code, label)) in items.iter().enumerate() {
+    for (i, item) in items.iter().enumerate() {
         let ix = card_x + 25.0 + (i as f64) * step;
         let iy = card_y + 44.0;
 
-        match *sym_code {
-            "M" => {
+        match item.symbol {
+            LegendSymbolType::EmptyM => {
                 svg.push_str(&format!(
                     "    <rect class=\"sym\" x=\"{:.1}\" y=\"{:.1}\" width=\"16\" height=\"16\" />\n",
                     ix - 8.0, iy - 8.0
                 ));
             }
-            "F" => {
+            LegendSymbolType::EmptyF => {
                 svg.push_str(&format!(
                     "    <circle class=\"sym\" cx=\"{:.1}\" cy=\"{:.1}\" r=\"8\" />\n",
                     ix, iy
                 ));
             }
-            "Aff" => {
+            LegendSymbolType::SqSolid => {
                 svg.push_str(&format!(
                     "    <rect class=\"sym-aff\" x=\"{:.1}\" y=\"{:.1}\" width=\"16\" height=\"16\" />\n",
                     ix - 8.0, iy - 8.0
                 ));
             }
-            "Car" => {
+            LegendSymbolType::CircSolid => {
+                svg.push_str(&format!(
+                    "    <circle class=\"sym-aff\" cx=\"{:.1}\" cy=\"{:.1}\" r=\"8\" />\n",
+                    ix, iy
+                ));
+            }
+            LegendSymbolType::SqHalf => {
+                svg.push_str(&format!(
+                    "    <rect class=\"sym\" x=\"{:.1}\" y=\"{:.1}\" width=\"16\" height=\"16\" />\n",
+                    ix - 8.0, iy - 8.0
+                ));
+                svg.push_str(&format!(
+                    "    <rect x=\"{:.1}\" y=\"{:.1}\" width=\"8\" height=\"16\" fill=\"#000\" />\n",
+                    ix - 8.0, iy - 8.0
+                ));
+            }
+            LegendSymbolType::CircHalf => {
                 svg.push_str(&format!(
                     "    <circle class=\"sym\" cx=\"{:.1}\" cy=\"{:.1}\" r=\"8\" />\n",
                     ix, iy
                 ));
                 svg.push_str(&format!(
-                    "    <circle cx=\"{:.1}\" cy=\"{:.1}\" r=\"3\" fill=\"#000\" />\n",
-                    ix, iy
+                    "    <path d=\"M {:.1} {:.1} A 8 8 0 0 0 {:.1} {:.1} Z\" fill=\"#000\" />\n",
+                    ix, iy - 8.0, ix, iy + 8.0
                 ));
             }
-            "Dec" => {
+            LegendSymbolType::Suspect => {
+                svg.push_str(&format!(
+                    "    <circle class=\"sym\" cx=\"{:.1}\" cy=\"{:.1}\" r=\"8\" />\n",
+                    ix, iy
+                ));
+                svg.push_str(&format!(
+                    "    <text class=\"lbl\" font-size=\"12\" x=\"{:.1}\" y=\"{:.1}\">?</text>\n",
+                    ix, iy + 4.0
+                ));
+            }
+            LegendSymbolType::Deceased => {
                 svg.push_str(&format!(
                     "    <rect class=\"sym\" x=\"{:.1}\" y=\"{:.1}\" width=\"16\" height=\"16\" />\n",
                     ix - 8.0, iy - 8.0
@@ -305,31 +475,27 @@ fn render_legend_card(svg: &mut String, width: f64, height: f64) {
                     ix - 10.0, iy + 10.0, ix + 10.0, iy - 10.0
                 ));
             }
-            "Prob" => {
+            LegendSymbolType::Proband => {
                 svg.push_str(&format!(
                     "    <rect class=\"sym\" x=\"{:.1}\" y=\"{:.1}\" width=\"16\" height=\"16\" />\n",
                     ix - 8.0, iy - 8.0
                 ));
                 svg.push_str(&format!(
                     "    <path class=\"proband-arrow\" d=\"M {:.1} {:.1} L {:.1} {:.1}\" />\n",
-                    ix - 16.0,
-                    iy + 16.0,
-                    ix - 9.0,
-                    iy + 9.0
+                    ix - 16.0, iy + 16.0, ix - 9.0, iy + 9.0
                 ));
                 svg.push_str(&format!(
                     "    <text class=\"proband-lbl\" font-size=\"10\" x=\"{:.1}\" y=\"{:.1}\">P</text>\n",
                     ix - 20.0, iy + 18.0
                 ));
             }
-            _ => {}
         }
 
         svg.push_str(&format!(
             "    <text class=\"legend-lbl\" x=\"{:.1}\" y=\"{:.1}\">{}</text>\n",
             ix,
             card_y + 64.0,
-            label
+            item.label
         ));
     }
 

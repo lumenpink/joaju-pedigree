@@ -1,6 +1,8 @@
+pub mod directives;
 use crate::kinship;
 use crate::layout::{LayoutOptions, PedLayout};
 use crate::render::{render_svg, RenderOptions};
+pub use directives::{extract_directives, PedDirectives};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use thiserror::Error;
@@ -31,8 +33,8 @@ impl Sex {
     pub fn parse_str(s: &str) -> Self {
         let clean = s.trim().to_uppercase();
         match clean.as_str() {
-            "1" | "M" | "MALE" | "MAS" => Sex::Male,
-            "2" | "F" | "FEMALE" | "FEM" => Sex::Female,
+            "1" | "M" | "MALE" | "MAS" | "HOMEM" => Sex::Male,
+            "2" | "F" | "FEMALE" | "FEM" | "MULHER" => Sex::Female,
             _ => Sex::Unknown,
         }
     }
@@ -49,7 +51,7 @@ impl Status {
     pub fn parse_str(s: &str) -> Self {
         let clean = s.trim().to_uppercase();
         match clean.as_str() {
-            "1" | "D" | "DECEASED" | "FALECIDO" | "TRUE" => Status::Deceased,
+            "1" | "D" | "DECEASED" | "DEAD" | "FALECIDO" | "SIM" | "S" | "TRUE" => Status::Deceased,
             _ => Status::Alive,
         }
     }
@@ -112,10 +114,16 @@ impl Ped {
     }
 
     pub fn from_csv_str(csv_data: &str) -> Result<Self, PedError> {
+        Self::from_text(csv_data).map(|(ped, _)| ped)
+    }
+
+    pub fn from_text(text: &str) -> Result<(Self, PedDirectives), PedError> {
+        let (directives, clean_csv) = extract_directives(text);
+
         let mut rdr = csv::ReaderBuilder::new()
             .trim(csv::Trim::All)
             .flexible(true)
-            .from_reader(csv_data.as_bytes());
+            .from_reader(clean_csv.as_bytes());
 
         let headers = rdr.headers()?.clone();
         let col_map: HashMap<String, usize> = headers
@@ -158,21 +166,42 @@ impl Ped {
                 get_val(&record, &["status", "falecido", "deceased"]).unwrap_or_default();
             let status = Status::parse_str(&status_str);
 
-            let proband = get_val(&record, &["proband", "probando"])
-                .map(|v| v == "1" || v.to_uppercase() == "TRUE")
-                .unwrap_or(false);
+            let proband_val = get_val(&record, &["proband", "probando", "probanda"]).unwrap_or_default().to_uppercase();
+            let proband = matches!(proband_val.as_str(), "1" | "SIM" | "S" | "TRUE" | "PROBAND" | "PROBANDO" | "PROBANDA" | "P");
 
-            let affected = get_val(&record, &["affected", "aff"])
-                .and_then(|v| v.parse::<u8>().ok())
-                .unwrap_or(0);
+            let mut affected: u8 = 0;
+            let mut carrier: bool = false;
+            let mut suspect: bool = false;
 
-            let carrier = get_val(&record, &["carrier", "portador"])
-                .map(|v| v == "1" || v.to_uppercase() == "TRUE")
-                .unwrap_or(false);
+            // Análise da coluna fenotipo / afetado / affected
+            if let Some(pheno) = get_val(&record, &["fenotipo", "afetado", "affected", "aff"]) {
+                let p_clean = pheno.to_lowercase();
+                if matches!(
+                    p_clean.as_str(),
+                    "1" | "hom" | "homozigoto" | "afetado" | "doente" | "mut" | "affected" | "yes" | "sim" | "s"
+                ) {
+                    affected = 1;
+                } else if matches!(p_clean.as_str(), "het" | "heterozigoto" | "portador" | "carrier") {
+                    carrier = true;
+                } else if matches!(p_clean.as_str(), "?" | "suspeita" | "suspect" | "duvida") {
+                    suspect = true;
+                }
+            }
 
-            let suspect = get_val(&record, &["suspect", "suspeito"])
-                .map(|v| v == "1" || v.to_uppercase() == "TRUE")
-                .unwrap_or(false);
+            // Sobrescrita se houver colunas dedicadas
+            if let Some(c_val) = get_val(&record, &["carrier", "portador"]) {
+                let c_clean = c_val.to_uppercase();
+                if matches!(c_clean.as_str(), "1" | "SIM" | "S" | "TRUE" | "HET") {
+                    carrier = true;
+                }
+            }
+
+            if let Some(s_val) = get_val(&record, &["suspect", "suspeito"]) {
+                let s_clean = s_val.to_uppercase();
+                if matches!(s_clean.as_str(), "1" | "SIM" | "S" | "TRUE" | "?") {
+                    suspect = true;
+                }
+            }
 
             ped.add(Individual {
                 id,
@@ -187,10 +216,10 @@ impl Ped {
             })?;
         }
 
-        // Validação de ciclos (DAG check)
+        // Validação de ciclos (DAG check com 3-color DFS)
         ped.validate_acyclic()?;
 
-        Ok(ped)
+        Ok((ped, directives))
     }
 
     fn validate_acyclic(&self) -> Result<(), PedError> {
