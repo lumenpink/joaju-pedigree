@@ -16,6 +16,8 @@ pub enum PedError {
     NotFound(String),
     #[error("Ciclo parental inválido detectado para {0}")]
     CyclicPedigree(String),
+    #[error("Loop de consanguinidade detectado: {0}")]
+    LoopyPedigree(String),
     #[error("Erro de parse CSV: {0}")]
     CsvError(#[from] csv::Error),
     #[error("Erro de I/O: {0}")]
@@ -506,6 +508,19 @@ impl Ped {
             errors.extend(crate::genetics::check_marker_mendelian(self, m));
         }
         errors
+    }
+
+    // Graph & Loops helpers
+    pub fn has_loops(&self) -> bool {
+        crate::graph::has_inbreeding_loops(self)
+    }
+
+    pub fn break_loops(&self) -> Result<(Ped, Vec<crate::graph::LoopBreaker>), PedError> {
+        crate::graph::break_loops(self)
+    }
+
+    pub fn peeling_order(&self) -> Result<Vec<String>, PedError> {
+        crate::graph::peeling_order(self)
     }
 
     // Layout & Render helpers
