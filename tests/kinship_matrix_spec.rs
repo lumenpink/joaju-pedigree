@@ -68,7 +68,8 @@ fn test_spec_inbreeding_wright_coefficient() {
     // Casamento entre primos gerando filho consanguíneo
     let mut ped = Ped::cousins(1).expect("cousins 1");
     // Primos 7 (M) e 8 (F) têm um filho 9
-    ped.add(Individual::child("9", "7", "8", Sex::Male)).unwrap();
+    ped.add(Individual::child("9", "7", "8", Sex::Male))
+        .unwrap();
 
     let km = ped.kinship_matrix();
     // Coeficiente de consanguinidade Wright de 9 = kinship dos pais (7 e 8) = 0.0625 (1/16)

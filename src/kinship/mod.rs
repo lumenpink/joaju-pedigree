@@ -1,5 +1,133 @@
 use crate::core::Ped;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
+
+#[derive(Debug, Clone)]
+pub struct KinshipMatrix {
+    pub order: Vec<String>,
+    id_to_idx: HashMap<String, usize>,
+    matrix: Vec<Vec<f64>>,
+}
+
+impl KinshipMatrix {
+    pub fn get(&self, id1: &str, id2: &str) -> Option<f64> {
+        let i = self.id_to_idx.get(id1)?;
+        let j = self.id_to_idx.get(id2)?;
+        Some(self.matrix[*i][*j])
+    }
+
+    pub fn inbreeding(&self, id: &str) -> Option<f64> {
+        let i = self.id_to_idx.get(id)?;
+        let phi_ii = self.matrix[*i][*i];
+        Some((2.0 * phi_ii - 1.0).max(0.0))
+    }
+
+    pub fn size(&self) -> usize {
+        self.order.len()
+    }
+
+    pub fn values(&self) -> &Vec<Vec<f64>> {
+        &self.matrix
+    }
+}
+
+pub fn compute_kinship_matrix(ped: &Ped) -> KinshipMatrix {
+    // 1. Ordenação topológica (pais sempre antes de filhos)
+    let mut in_degree: HashMap<&str, usize> = HashMap::new();
+    let mut children_map: HashMap<&str, Vec<&str>> = HashMap::new();
+
+    for id in &ped.order {
+        in_degree.entry(id.as_str()).or_insert(0);
+        let ind = &ped.members[id];
+        if let Some(ref f) = ind.fid {
+            *in_degree.entry(id.as_str()).or_insert(0) += 1;
+            children_map
+                .entry(f.as_str())
+                .or_default()
+                .push(id.as_str());
+        }
+        if let Some(ref m) = ind.mid {
+            *in_degree.entry(id.as_str()).or_insert(0) += 1;
+            children_map
+                .entry(m.as_str())
+                .or_default()
+                .push(id.as_str());
+        }
+    }
+
+    let mut queue: std::collections::VecDeque<&str> = ped
+        .order
+        .iter()
+        .map(|s| s.as_str())
+        .filter(|&id| in_degree.get(id).copied().unwrap_or(0) == 0)
+        .collect();
+
+    let mut topo_order: Vec<String> = Vec::with_capacity(ped.len());
+    while let Some(curr) = queue.pop_front() {
+        topo_order.push(curr.to_string());
+        if let Some(kids) = children_map.get(curr) {
+            for &kid in kids {
+                if let Some(deg) = in_degree.get_mut(kid) {
+                    *deg -= 1;
+                    if *deg == 0 {
+                        queue.push_back(kid);
+                    }
+                }
+            }
+        }
+    }
+
+    // Se houver nós restantes (desconexos sem pais), anexa na ordem
+    for id in &ped.order {
+        if !topo_order.contains(id) {
+            topo_order.push(id.clone());
+        }
+    }
+
+    let n = topo_order.len();
+    let id_to_idx: HashMap<String, usize> = topo_order
+        .iter()
+        .enumerate()
+        .map(|(i, id)| (id.clone(), i))
+        .collect();
+
+    let mut matrix = vec![vec![0.0; n]; n];
+
+    // 2. Algoritmo recursivo de Malécot / Lange
+    for i in 0..n {
+        let id_i = &topo_order[i];
+        let ind_i = &ped.members[id_i];
+        let p1 = ind_i.fid.as_ref().and_then(|f| id_to_idx.get(f)).copied();
+        let p2 = ind_i.mid.as_ref().and_then(|m| id_to_idx.get(m)).copied();
+
+        for j in 0..=i {
+            if i == j {
+                // Auto-kinship Phi_ii
+                if let (Some(f_idx), Some(m_idx)) = (p1, p2) {
+                    let parent_kinship = matrix[f_idx][m_idx];
+                    matrix[i][i] = 0.5 * (1.0 + parent_kinship);
+                } else {
+                    matrix[i][i] = 0.5;
+                }
+            } else {
+                // Kinship entre i e j
+                let val = match (p1, p2) {
+                    (Some(f_idx), Some(m_idx)) => 0.5 * matrix[f_idx][j] + 0.5 * matrix[m_idx][j],
+                    (Some(f_idx), None) => 0.5 * matrix[f_idx][j],
+                    (None, Some(m_idx)) => 0.5 * matrix[m_idx][j],
+                    (None, None) => 0.0,
+                };
+                matrix[i][j] = val;
+                matrix[j][i] = val;
+            }
+        }
+    }
+
+    KinshipMatrix {
+        order: topo_order,
+        id_to_idx,
+        matrix,
+    }
+}
 
 pub fn find_children<'a>(ped: &'a Ped, id: &str) -> Vec<&'a str> {
     ped.order

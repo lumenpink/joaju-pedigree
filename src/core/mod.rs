@@ -476,6 +476,18 @@ impl Ped {
         kinship::is_consanguineous(self, id1, id2)
     }
 
+    pub fn kinship_matrix(&self) -> kinship::KinshipMatrix {
+        kinship::compute_kinship_matrix(self)
+    }
+
+    pub fn kinship_coeff(&self, id1: &str, id2: &str) -> Option<f64> {
+        self.kinship_matrix().get(id1, id2)
+    }
+
+    pub fn inbreeding_coeff(&self, id: &str) -> Option<f64> {
+        self.kinship_matrix().inbreeding(id)
+    }
+
     // Layout & Render helpers
     pub fn compute_layout(&self, options: &LayoutOptions) -> Result<PedLayout, PedError> {
         Ok(PedLayout::compute(self, options))
