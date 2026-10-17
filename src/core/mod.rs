@@ -169,6 +169,7 @@ pub struct Ped {
     pub order: Vec<String>,
     pub divorces: HashSet<(String, String)>,
     pub childless: HashMap<(String, String), ChildlessType>,
+    pub markers: Vec<crate::genetics::Marker>,
 }
 
 impl Ped {
@@ -178,6 +179,7 @@ impl Ped {
             order: Vec::new(),
             divorces: HashSet::new(),
             childless: HashMap::new(),
+            markers: Vec::new(),
         }
     }
 
@@ -486,6 +488,24 @@ impl Ped {
 
     pub fn inbreeding_coeff(&self, id: &str) -> Option<f64> {
         self.kinship_matrix().inbreeding(id)
+    }
+
+    // Genetics & Marker helpers
+    pub fn add_marker(&mut self, marker: crate::genetics::Marker) -> Result<(), PedError> {
+        self.markers.push(marker);
+        Ok(())
+    }
+
+    pub fn marker(&self, name: &str) -> Option<&crate::genetics::Marker> {
+        self.markers.iter().find(|m| m.name == name)
+    }
+
+    pub fn mendelian_check(&self) -> Vec<crate::genetics::MendelianError> {
+        let mut errors = Vec::new();
+        for m in &self.markers {
+            errors.extend(crate::genetics::check_marker_mendelian(self, m));
+        }
+        errors
     }
 
     // Layout & Render helpers
