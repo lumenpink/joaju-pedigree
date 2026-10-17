@@ -14,6 +14,8 @@ pub struct PedDirectives {
     pub legend_labels: Option<Vec<String>>,
     pub legend_types: Option<Vec<String>>,
     pub twins: Vec<TwinDirective>,
+    pub divorces: Vec<(String, String)>,
+    pub childless: Vec<(String, String, crate::core::ChildlessType)>,
 }
 
 impl PedDirectives {
@@ -94,6 +96,34 @@ pub fn extract_directives(text: &str) -> (PedDirectives, String) {
                             ids,
                             twin_type: TwinType::Dizygotic,
                         });
+                    }
+                } else if lower_key.starts_with("divorce") || lower_key.starts_with("divorcio") {
+                    let parts: Vec<String> = val
+                        .split(',')
+                        .map(|s| s.trim().to_string())
+                        .filter(|s| !s.is_empty())
+                        .collect();
+                    if parts.len() >= 2 {
+                        directives
+                            .divorces
+                            .push((parts[0].clone(), parts[1].clone()));
+                    }
+                } else if lower_key.starts_with("childless") || lower_key.starts_with("sem_filhos")
+                {
+                    let parts: Vec<String> = val
+                        .split(',')
+                        .map(|s| s.trim().to_string())
+                        .filter(|s| !s.is_empty())
+                        .collect();
+                    if parts.len() >= 2 {
+                        let c_type = if parts.len() >= 3 {
+                            crate::core::ChildlessType::parse_str(&parts[2])
+                        } else {
+                            crate::core::ChildlessType::ByChoice
+                        };
+                        directives
+                            .childless
+                            .push((parts[0].clone(), parts[1].clone(), c_type));
                     }
                 }
                 directives.raw.insert(lower_key, val);

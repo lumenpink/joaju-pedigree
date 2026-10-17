@@ -96,6 +96,11 @@ pub fn render_svg(ped: &Ped, layout: &PedLayout, options: &RenderOptions) -> Str
     svg.push_str("  <style>\n");
     svg.push_str("    .sym { stroke: #000000; stroke-width: 2.2; fill: #ffffff; }\n");
     svg.push_str("    .sym-aff { stroke: #000000; stroke-width: 2.2; fill: #000000; }\n");
+    svg.push_str("    .sym-triangle { stroke: #000000; stroke-width: 2.2; fill: #ffffff; }\n");
+    svg.push_str("    .sym-triangle-aff { stroke: #000000; stroke-width: 2.2; fill: #000000; }\n");
+    svg.push_str("    .adopted-bracket { stroke: #000000; stroke-width: 2.0; fill: none; }\n");
+    svg.push_str("    .divorce-slash { stroke: #000000; stroke-width: 2.0; }\n");
+    svg.push_str("    .childless-bar { stroke: #000000; stroke-width: 2.2; }\n");
     svg.push_str("    .kin-line { stroke: #000000; stroke-width: 2.0; stroke-linecap: round; }\n");
     svg.push_str("    .consanguinity-line { stroke: #000000; stroke-width: 2.0; }\n");
     svg.push_str("    .deceased-slash { stroke: #000000; stroke-width: 2.2; }\n");
@@ -133,6 +138,35 @@ pub fn render_svg(ped: &Ped, layout: &PedLayout, options: &RenderOptions) -> Str
                 "  <line class=\"kin-line marriage-line\" x1=\"{:.1}\" y1=\"{:.1}\" x2=\"{:.1}\" y2=\"{:.1}\" />\n",
                 x_start, u.y, x_end, u.y
             ));
+        }
+
+        // Marcador de Divórcio //
+        if u.is_divorced {
+            let mid_x = (x_start + x_end) / 2.0;
+            svg.push_str(&format!(
+                "  <!-- Marcador de Divórcio // -->\n  <line class=\"kin-line divorce-slash\" x1=\"{:.1}\" y1=\"{:.1}\" x2=\"{:.1}\" y2=\"{:.1}\" />\n  <line class=\"kin-line divorce-slash\" x1=\"{:.1}\" y1=\"{:.1}\" x2=\"{:.1}\" y2=\"{:.1}\" />\n",
+                mid_x - 5.0, u.y + 8.0, mid_x - 1.0, u.y - 8.0,
+                mid_x + 1.0, u.y + 8.0, mid_x + 5.0, u.y - 8.0
+            ));
+        }
+
+        // Sem filhos por opção ou infertilidade
+        if let Some(ref c_type) = u.childless {
+            if u.children.is_empty() {
+                let mid_x = (x_start + x_end) / 2.0;
+                let bar_y = u.y + 25.0;
+                svg.push_str(&format!(
+                    "  <!-- Sem filhos (Terminador T) -->\n  <line class=\"kin-line\" x1=\"{:.1}\" y1=\"{:.1}\" x2=\"{:.1}\" y2=\"{:.1}\" />\n  <line class=\"kin-line childless-bar\" x1=\"{:.1}\" y1=\"{:.1}\" x2=\"{:.1}\" y2=\"{:.1}\" />\n",
+                    mid_x, u.y, mid_x, bar_y,
+                    mid_x - 10.0, bar_y, mid_x + 10.0, bar_y
+                ));
+                if *c_type == crate::core::ChildlessType::Infertility {
+                    svg.push_str(&format!(
+                        "  <line class=\"kin-line childless-bar\" x1=\"{:.1}\" y1=\"{:.1}\" x2=\"{:.1}\" y2=\"{:.1}\" />\n",
+                        mid_x - 10.0, bar_y + 4.0, mid_x + 10.0, bar_y + 4.0
+                    ));
+                }
+            }
         }
 
         // Descendência se houver filhos
@@ -262,31 +296,67 @@ pub fn render_svg(ped: &Ped, layout: &PedLayout, options: &RenderOptions) -> Str
 fn render_individual(svg: &mut String, ind: &Individual, x: f64, y: f64, show_id: bool) {
     let sym_class = if ind.affected == 1 { "sym-aff" } else { "sym" };
 
-    match ind.sex {
-        Sex::Male => {
+    if ind.is_pregnancy_loss() {
+        let tri_class = if ind.affected == 1 {
+            "sym-triangle-aff"
+        } else {
+            "sym-triangle"
+        };
+        svg.push_str(&format!(
+            "  <polygon class=\"{}\" points=\"{:.1},{:.1} {:.1},{:.1} {:.1},{:.1}\" />\n",
+            tri_class,
+            x,
+            y - 14.0,
+            x - 14.0,
+            y + 14.0,
+            x + 14.0,
+            y + 14.0
+        ));
+        if ind.pregnancy_loss == crate::core::PregnancyLossType::Induced {
             svg.push_str(&format!(
-                "  <rect class=\"{}\" x=\"{:.1}\" y=\"{:.1}\" width=\"28\" height=\"28\" rx=\"1\" />\n",
-                sym_class,
+                "  <line class=\"deceased-slash\" x1=\"{:.1}\" y1=\"{:.1}\" x2=\"{:.1}\" y2=\"{:.1}\" />\n",
                 x - 14.0,
+                y + 14.0,
+                x + 14.0,
                 y - 14.0
             ));
         }
-        Sex::Female => {
-            svg.push_str(&format!(
-                "  <circle class=\"{}\" cx=\"{:.1}\" cy=\"{:.1}\" r=\"14\" />\n",
-                sym_class, x, y
-            ));
+    } else {
+        match ind.sex {
+            Sex::Male => {
+                svg.push_str(&format!(
+                    "  <rect class=\"{}\" x=\"{:.1}\" y=\"{:.1}\" width=\"28\" height=\"28\" rx=\"1\" />\n",
+                    sym_class,
+                    x - 14.0,
+                    y - 14.0
+                ));
+            }
+            Sex::Female => {
+                svg.push_str(&format!(
+                    "  <circle class=\"{}\" cx=\"{:.1}\" cy=\"{:.1}\" r=\"14\" />\n",
+                    sym_class, x, y
+                ));
+            }
+            Sex::Unknown => {
+                svg.push_str(&format!(
+                    "  <polygon class=\"{}\" points=\"{:.1},{:.1} {:.1},{:.1} {:.1},{:.1} {:.1},{:.1}\" />\n",
+                    sym_class,
+                    x, y - 16.0,
+                    x + 16.0, y,
+                    x, y + 16.0,
+                    x - 16.0, y
+                ));
+            }
         }
-        Sex::Unknown => {
-            svg.push_str(&format!(
-                "  <polygon class=\"{}\" points=\"{:.1},{:.1} {:.1},{:.1} {:.1},{:.1} {:.1},{:.1}\" />\n",
-                sym_class,
-                x, y - 16.0,
-                x + 16.0, y,
-                x, y + 16.0,
-                x - 16.0, y
-            ));
-        }
+    }
+
+    // Colchetes de Adoção (Adoption [ ])
+    if ind.adoption == crate::core::AdoptionType::In {
+        svg.push_str(&format!(
+            "  <!-- Colchetes de Adocao -->\n  <path class=\"adopted-bracket\" d=\"M {:.1} {:.1} L {:.1} {:.1} L {:.1} {:.1} L {:.1} {:.1}\" />\n  <path class=\"adopted-bracket\" d=\"M {:.1} {:.1} L {:.1} {:.1} L {:.1} {:.1} L {:.1} {:.1}\" />\n",
+            x - 18.0, y - 18.0, x - 23.0, y - 18.0, x - 23.0, y + 18.0, x - 18.0, y + 18.0,
+            x + 18.0, y - 18.0, x + 23.0, y - 18.0, x + 23.0, y + 18.0, x + 18.0, y + 18.0
+        ));
     }
 
     // Portador (Carrier - meio preenchimento ou ponto central)
@@ -319,7 +389,7 @@ fn render_individual(svg: &mut String, ind: &Individual, x: f64, y: f64, show_id
     }
 
     // Falecido (Corte diagonal)
-    if ind.status == Status::Deceased {
+    if ind.status == Status::Deceased && !ind.is_pregnancy_loss() {
         svg.push_str(&format!(
             "  <line class=\"deceased-slash\" x1=\"{:.1}\" y1=\"{:.1}\" x2=\"{:.1}\" y2=\"{:.1}\" />\n",
             x - 19.0,
@@ -349,8 +419,22 @@ fn render_individual(svg: &mut String, ind: &Individual, x: f64, y: f64, show_id
         ));
     }
 
-    // Identificador
-    if show_id {
+    // Identificador ou Rótulo Multilinhas
+    if let Some(ref lbl) = ind.label {
+        let lines: Vec<&str> = if lbl.contains("\\n") {
+            lbl.split("\\n").collect()
+        } else {
+            lbl.split('\n').collect()
+        };
+        for (i, line) in lines.iter().enumerate() {
+            svg.push_str(&format!(
+                "  <text class=\"lbl\" x=\"{:.1}\" y=\"{:.1}\">{}</text>\n",
+                x,
+                y + 30.0 + (i as f64) * 14.0,
+                line
+            ));
+        }
+    } else if show_id {
         svg.push_str(&format!(
             "  <text class=\"lbl\" x=\"{:.1}\" y=\"{:.1}\">{}</text>\n",
             x,

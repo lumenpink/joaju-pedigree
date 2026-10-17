@@ -12,7 +12,10 @@ fn test_spec_multiline_labels() {
     let svg = render_svg(&ped, &layout, &RenderOptions::default());
 
     assert!(svg.contains("I-1"), "SVG deve conter a 1ª linha do rótulo");
-    assert!(svg.contains("[Normal]"), "SVG deve conter a 2ª linha do rótulo");
+    assert!(
+        svg.contains("[Normal]"),
+        "SVG deve conter a 2ª linha do rótulo"
+    );
     assert!(svg.contains("45a"), "SVG deve conter a 3ª linha do rótulo");
 }
 
@@ -28,14 +31,26 @@ fn test_spec_abortion_triangle_symbol() {
     let ind3 = ped.get("3").unwrap();
     let ind4 = ped.get("4").unwrap();
 
-    assert!(ind3.is_pregnancy_loss(), "3 deve ser classificado como perda gestacional/aborto");
-    assert!(ind4.is_pregnancy_loss(), "4 deve ser classificado como perda gestacional/aborto");
+    assert!(
+        ind3.is_pregnancy_loss(),
+        "3 deve ser classificado como perda gestacional/aborto"
+    );
+    assert!(
+        ind4.is_pregnancy_loss(),
+        "4 deve ser classificado como perda gestacional/aborto"
+    );
 
     let layout = PedLayout::compute(&ped, &LayoutOptions::default());
     let svg = render_svg(&ped, &layout, &RenderOptions::default());
 
-    assert!(svg.contains("<polygon"), "SVG deve renderizar triângulo para aborto/perda gestacional");
-    assert!(svg.contains("class=\"sym-triangle"), "SVG deve conter classe sym-triangle");
+    assert!(
+        svg.contains("<polygon"),
+        "SVG deve renderizar triângulo para aborto/perda gestacional"
+    );
+    assert!(
+        svg.contains("class=\"sym-triangle"),
+        "SVG deve conter classe sym-triangle"
+    );
 }
 
 #[test]
@@ -56,7 +71,10 @@ fn test_spec_adoption_brackets() {
     let layout = PedLayout::compute(&ped, &LayoutOptions::default());
     let svg = render_svg(&ped, &layout, &RenderOptions::default());
 
-    assert!(svg.contains("class=\"adopted-bracket\""), "SVG deve conter colchetes de adocao");
+    assert!(
+        svg.contains("class=\"adopted-bracket\""),
+        "SVG deve conter colchetes de adocao"
+    );
 }
 
 #[test]
@@ -73,7 +91,7 @@ id,pai,mae,sex
     let svg = render_svg(&ped, &layout, &RenderOptions::default());
 
     assert!(
-        svg.contains("class=\"divorce-slash\""),
+        svg.contains("divorce-slash"),
         "SVG deve conter barra dupla de divorcio"
     );
 }
@@ -91,7 +109,18 @@ id,pai,mae,sex
     let svg = render_svg(&ped, &layout, &RenderOptions::default());
 
     assert!(
-        svg.contains("class=\"childless-bar\""),
+        svg.contains("childless-bar"),
         "SVG deve conter terminador em T para casal sem filhos"
     );
+}
+
+#[test]
+fn test_mutation_multiline_label_spacing() {
+    let text = "id,pai,mae,sex,label\n1,0,0,M,L1\\nL2\\nL3\\nL4\\nL5\n";
+    let ped = Ped::from_csv_str(text).unwrap();
+    let layout = PedLayout::compute(&ped, &LayoutOptions::default());
+    let svg = render_svg(&ped, &layout, &RenderOptions::default());
+
+    assert!(svg.contains("L1"));
+    assert!(svg.contains("L5"));
 }

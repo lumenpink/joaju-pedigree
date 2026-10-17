@@ -38,6 +38,8 @@ pub struct UnionLine {
     pub x2: f64,
     pub y: f64,
     pub is_consanguineous: bool,
+    pub is_divorced: bool,
+    pub childless: Option<crate::core::ChildlessType>,
     pub children: Vec<String>,
 }
 
@@ -166,6 +168,8 @@ impl PedLayout {
                 if seen_unions.insert(key) {
                     if let (Some(cf), Some(cm)) = (coords.get(f), coords.get(m)) {
                         let is_consanguineous = ped.is_consanguineous(f, m);
+                        let is_divorced = ped.is_divorced(f, m);
+                        let childless = ped.childless_status(f, m);
                         let children: Vec<String> = ped
                             .children(f)
                             .into_iter()
@@ -180,9 +184,35 @@ impl PedLayout {
                             x2: cm.x,
                             y: cf.y,
                             is_consanguineous,
+                            is_divorced,
+                            childless,
                             children,
                         });
                     }
+                }
+            }
+        }
+
+        // Uniões de divórcio ou sem filhos adicionais sem filhos no grafo
+        for (p1, p2) in ped.divorces.iter().chain(ped.childless.keys()) {
+            let key = if p1 < p2 {
+                format!("{}:{}", p1, p2)
+            } else {
+                format!("{}:{}", p2, p1)
+            };
+            if seen_unions.insert(key) {
+                if let (Some(c1), Some(c2)) = (coords.get(p1), coords.get(p2)) {
+                    unions.push(UnionLine {
+                        p1_id: p1.clone(),
+                        p2_id: p2.clone(),
+                        x1: c1.x,
+                        x2: c2.x,
+                        y: c1.y,
+                        is_consanguineous: ped.is_consanguineous(p1, p2),
+                        is_divorced: ped.is_divorced(p1, p2),
+                        childless: ped.childless_status(p1, p2),
+                        children: Vec::new(),
+                    });
                 }
             }
         }

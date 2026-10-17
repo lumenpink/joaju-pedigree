@@ -78,6 +78,66 @@ impl TwinType {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum PregnancyLossType {
+    #[default]
+    None = 0,
+    Spontaneous = 1,
+    Induced = 2,
+}
+
+impl PregnancyLossType {
+    pub fn parse_str(s: &str) -> Self {
+        let clean = s.trim().to_lowercase();
+        match clean.as_str() {
+            "1" | "sim" | "true" | "s" | "espontaneo" | "spontaneous" | "aborto"
+            | "miscarriage" => PregnancyLossType::Spontaneous,
+            "2" | "induzido" | "interrupcao" | "induced" | "terminado" | "terminated" => {
+                PregnancyLossType::Induced
+            }
+            _ => PregnancyLossType::None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum AdoptionType {
+    #[default]
+    None = 0,
+    In = 1,
+    Out = 2,
+}
+
+impl AdoptionType {
+    pub fn parse_str(s: &str) -> Self {
+        let clean = s.trim().to_lowercase();
+        match clean.as_str() {
+            "in" | "dentro" | "adotado" | "adopted" | "1" => AdoptionType::In,
+            "out" | "fora" | "cedido" | "2" => AdoptionType::Out,
+            _ => AdoptionType::None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum ChildlessType {
+    #[default]
+    None = 0,
+    ByChoice = 1,
+    Infertility = 2,
+}
+
+impl ChildlessType {
+    pub fn parse_str(s: &str) -> Self {
+        let clean = s.trim().to_lowercase();
+        match clean.as_str() {
+            "choice" | "opcao" | "sem_filhos" | "1" => ChildlessType::ByChoice,
+            "infertility" | "infertil" | "esteril" | "2" => ChildlessType::Infertility,
+            _ => ChildlessType::None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Individual {
     pub id: String,
@@ -91,12 +151,23 @@ pub struct Individual {
     pub suspect: bool,
     pub twin_group: Option<String>,
     pub twin_type: TwinType,
+    pub label: Option<String>,
+    pub pregnancy_loss: PregnancyLossType,
+    pub adoption: AdoptionType,
+}
+
+impl Individual {
+    pub fn is_pregnancy_loss(&self) -> bool {
+        self.pregnancy_loss != PregnancyLossType::None
+    }
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Ped {
     pub members: HashMap<String, Individual>,
     pub order: Vec<String>,
+    pub divorces: HashSet<(String, String)>,
+    pub childless: HashMap<(String, String), ChildlessType>,
 }
 
 impl Ped {
@@ -104,7 +175,21 @@ impl Ped {
         Self {
             members: HashMap::new(),
             order: Vec::new(),
+            divorces: HashSet::new(),
+            childless: HashMap::new(),
         }
+    }
+
+    pub fn is_divorced(&self, p1: &str, p2: &str) -> bool {
+        self.divorces.contains(&(p1.to_string(), p2.to_string()))
+            || self.divorces.contains(&(p2.to_string(), p1.to_string()))
+    }
+
+    pub fn childless_status(&self, p1: &str, p2: &str) -> Option<ChildlessType> {
+        self.childless
+            .get(&(p1.to_string(), p2.to_string()))
+            .or_else(|| self.childless.get(&(p2.to_string(), p1.to_string())))
+            .copied()
     }
 
     pub fn add(&mut self, ind: Individual) -> Result<(), PedError> {
@@ -268,6 +353,24 @@ impl Ped {
                 }
             }
 
+            let label = get_val(&record, &["label", "rotulo", "nome", "name"]);
+            let preg_str = get_val(
+                &record,
+                &[
+                    "aborto",
+                    "abortion",
+                    "perda",
+                    "pregnancy_loss",
+                    "interrupcao",
+                ],
+            )
+            .unwrap_or_default();
+            let pregnancy_loss = PregnancyLossType::parse_str(&preg_str);
+
+            let adocao_str =
+                get_val(&record, &["adocao", "adoption", "adotado", "adopted"]).unwrap_or_default();
+            let adoption = AdoptionType::parse_str(&adocao_str);
+
             ped.add(Individual {
                 id,
                 fid,
@@ -280,6 +383,9 @@ impl Ped {
                 suspect,
                 twin_group,
                 twin_type,
+                label,
+                pregnancy_loss,
+                adoption,
             })?;
         }
 
@@ -292,6 +398,16 @@ impl Ped {
                     ind.twin_type = tw_dir.twin_type;
                 }
             }
+        }
+
+        // Aplica diretivas de divórcio (%% divorce=1,2)
+        for (p1, p2) in &directives.divorces {
+            ped.divorces.insert((p1.clone(), p2.clone()));
+        }
+
+        // Aplica diretivas de childless (%% childless=1,2,choice)
+        for (p1, p2, c_type) in &directives.childless {
+            ped.childless.insert((p1.clone(), p2.clone()), *c_type);
         }
 
         // Validação de ciclos (DAG check com 3-color DFS)
