@@ -79,3 +79,12 @@ fn test_spec_double_cousins_builder() {
     // Dois irmãos casando com duas irmãs gerando primos duplos
     assert_eq!(ped.len(), 10);
 }
+
+#[test]
+fn test_mutation_nuclear_scaling() {
+    for n in 1..=20 {
+        let ped = Ped::nuclear(n).unwrap();
+        assert_eq!(ped.len(), 2 + n);
+        assert_eq!(ped.founders().len(), 2);
+    }
+}
