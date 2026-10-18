@@ -1,9 +1,9 @@
 use clap::Parser;
-use pedigreers::prelude::*;
+use pedigree_rs::prelude::*;
 
 #[derive(Parser, Debug)]
 #[command(
-    name = "pedigreers",
+    name = "pedigree-rs",
     version,
     about = "Motor soberano de heredogramas clínicos em Rust"
 )]
@@ -20,7 +20,7 @@ struct Cli {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
-    println!("pedigreers v{} inicializado.", env!("CARGO_PKG_VERSION"));
+    println!("pedigree-rs v{} inicializado.", env!("CARGO_PKG_VERSION"));
 
     let raw_content = if let Some(path) = cli.input {
         std::fs::read_to_string(path)?

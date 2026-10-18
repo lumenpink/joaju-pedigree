@@ -1,4 +1,4 @@
-use pedigreers::prelude::*;
+use pedigree_rs::prelude::*;
 use std::collections::HashSet;
 
 #[test]

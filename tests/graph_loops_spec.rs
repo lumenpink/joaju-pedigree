@@ -1,4 +1,4 @@
-use pedigreers::prelude::*;
+use pedigree_rs::prelude::*;
 
 #[test]
 fn test_spec_detect_inbreeding_loop_first_cousins() {

@@ -1,4 +1,4 @@
-use pedigreers::prelude::*;
+use pedigree_rs::prelude::*;
 
 #[test]
 fn test_fenotipo_and_status_synonyms() {
