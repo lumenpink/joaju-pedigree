@@ -1,4 +1,4 @@
-use pedigree_rs::prelude::*;
+use joaju_pedigree::prelude::*;
 
 #[test]
 fn test_spec_nuclear_ped_builder() {

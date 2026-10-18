@@ -1,7 +1,7 @@
-# pedigree-rs
+# joaju-pedigree
 
-[![crates.io](https://img.shields.io/crates/v/pedigree-rs.svg)](https://crates.io/crates/pedigree-rs)
-[![docs.rs](https://docs.rs/pedigree-rs/badge.svg)](https://docs.rs/pedigree-rs)
+[![crates.io](https://img.shields.io/crates/v/joaju-pedigree.svg)](https://crates.io/crates/joaju-pedigree)
+[![docs.rs](https://docs.rs/joaju-pedigree/badge.svg)](https://docs.rs/joaju-pedigree)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![GOST](https://img.shields.io/badge/GOST-1.1.0-emerald.svg)](https://codeberg.org/lumenpink/gost)
 
@@ -14,11 +14,11 @@ Motor soberano e biblioteca de alta performance em Rust para modelagem genealóg
 
 ## 🎯 Escopo & Missão
 
-O `pedigree-rs` nasce para fornecer uma implementação **100% nativa em Rust** com paridade funcional ao consagrado ecossistema **`pedtools`** do R (desenvolvido por Magnus Dehli Vigeland / Universidade de Oslo), eliminando a dependência do runtime GNU R e permitindo a renderização instantânea de heredogramas em microssegundos dentro de compiladores como o **Joaju**, servidores web e ferramentas CLI.
+O `joaju-pedigree` nasce para fornecer uma implementação **100% nativa em Rust** com paridade funcional ao consagrado ecossistema **`pedtools`** do R (desenvolvido por Magnus Dehli Vigeland / Universidade de Oslo), eliminando a dependência do runtime GNU R e permitindo a renderização instantânea de heredogramas em microssegundos dentro de compiladores como o **Joaju**, servidores web e ferramentas CLI.
 
 ---
 
-## 🧬 Módulos do `pedigree-rs` (Paridade com `pedtools`)
+## 🧬 Módulos do `joaju-pedigree` (Paridade com `pedtools`)
 
 ### 1. Núcleo Estrutural (`core` / `ped`)
 * **Estrutura `Ped` e `Individual`**: Modelagem baseada em Arena (`petgraph` e identificadores) para suporte seguro a ciclos consanguíneos e múltiplos núcleos familiares.
@@ -66,17 +66,17 @@ O `pedigree-rs` nasce para fornecer uma implementação **100% nativa em Rust** 
 
 ## 🚀 Instalação
 
-Adicione `pedigree-rs` ao seu `Cargo.toml`:
+Adicione `joaju-pedigree` ao seu `Cargo.toml`:
 
 ```toml
 [dependencies]
-pedigree-rs = "0.1.0"
+joaju-pedigree = "0.1.0"
 ```
 
 Ou instale a CLI:
 
 ```bash
-cargo install pedigree-rs
+cargo install joaju-pedigree
 ```
 
 ---
@@ -84,7 +84,7 @@ cargo install pedigree-rs
 ## ⚡ Exemplo de Uso (Rust API)
 
 ```rust
-use pedigree_rs::prelude::*;
+use joaju_pedigree::prelude::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 1. Criação declarativa a partir de CSV ou builders típicos
@@ -97,10 +97,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!((phi_1_3 - 0.25).abs() < 1e-6);
 
     // 3. Cálculo de layout clínico
-    let layout = PedLayout::compute(&ped, &LayoutOptions::default())?;
+    let layout = ped.compute_layout(&LayoutOptions::default())?;
 
     // 4. Renderização para SVG vetorial
-    let svg = render_svg(&ped, &layout, &RenderOptions::default());
+    let svg = ped.render_svg(&layout, &RenderOptions::default());
     assert!(svg.contains("<svg"));
 
     Ok(())
@@ -113,13 +113,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ```bash
 # Renderizar heredograma para SVG
-pedigree-rs plot familia.csv -o heredograma.svg --legend
+joaju-pedigree plot familia.csv -o heredograma.svg --legend
 
 # Validar herança mendeliana
-pedigree-rs check-mendel dados.ped
+joaju-pedigree check-mendel dados.ped
 
 # Calcular coeficientes de parentesco
-pedigree-rs kinship familia.csv
+joaju-pedigree kinship familia.csv
 ```
 
 ---

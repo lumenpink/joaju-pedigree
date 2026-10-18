@@ -1,4 +1,4 @@
-use pedigree_rs::prelude::*;
+use joaju_pedigree::prelude::*;
 use std::fs;
 
 #[test]

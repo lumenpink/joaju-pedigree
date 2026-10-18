@@ -1,4 +1,4 @@
-//! # pedigree-rs
+//! # joaju-pedigree
 //!
 //! Motor soberano em Rust para manipulação de pedigrees, cálculo de parentesco
 //! e renderização de heredogramas clínicos conformes com as diretrizes NSGC/ACMG.
@@ -10,7 +10,7 @@
 //! ## Exemplo Rápido
 //!
 //! ```rust
-//! use pedigree_rs::prelude::*;
+//! use joaju_pedigree::prelude::*;
 //!
 //! let ped = Ped::nuclear(2).unwrap();
 //! assert_eq!(ped.len(), 4);
