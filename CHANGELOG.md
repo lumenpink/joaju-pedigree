@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Renomeação canônica de package e repositório para `pedigree-rs` (`pedigree_rs`) em conformidade com o padrão GOST.
+- Integração da dependência local `ssot-rs` para resolução de datasets.
 - Suporte universal a todos os cabeçalhos e sinônimos originais do pedtools e Joaju (`individual`/`id`, `father`/`dadid`/`fid`/`pai`, `mother`/`momid`/`mid`/`mae`, `fenotipo`/`afetado`/`affected`).
 - Parsing e extração nativa de diretivas `%% chave = valor` embutidas em blocos de texto/markdown.
 - Sistema de legendas com paridade estrita aos símbolos do Joaju (`empty_m`, `empty_f`, `sq_half`, `circ_half`, `sq_solid`, `circ_solid`, `suspect`, `deceased`, `proband`).
