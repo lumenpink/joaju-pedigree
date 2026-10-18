@@ -1,13 +1,13 @@
 //! # joaju-pedigree
 //!
-//! Motor soberano em Rust para manipulação de pedigrees, cálculo de parentesco
-//! e renderização de heredogramas clínicos conformes com as diretrizes NSGC/ACMG.
+//! A high-performance Rust library for pedigree modeling, kinship calculation,
+//! and clinical pedigree rendering conforming to NSGC/ACMG guidelines.
 //!
 //! > ⚠️ **Early Development Notice (pre-1.0 / alpha)**: This library is currently in early
 //! > active development (`0.1.0`). It is NOT recommended for production use beyond experimental
 //! > testing and research. APIs are subject to breaking changes prior to a stable 1.0.0 release.
 //!
-//! ## Exemplo Rápido
+//! ## Quick Example
 //!
 //! ```rust
 //! use joaju_pedigree::prelude::*;

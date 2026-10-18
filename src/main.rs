@@ -5,7 +5,7 @@ use joaju_pedigree::prelude::*;
 #[command(
     name = "joaju-pedigree",
     version,
-    about = "Motor soberano de heredogramas clínicos em Rust"
+    about = "A high-performance clinical pedigree and kinship engine in Rust"
 )]
 struct Cli {
     #[arg(short, long)]
@@ -14,16 +14,13 @@ struct Cli {
     #[arg(short, long)]
     output: Option<String>,
 
-    #[arg(short, long, help = "Ativar geração automática de legenda clínica")]
+    #[arg(short, long, help = "Enable automatic generation of clinical legend")]
     legend: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
-    println!(
-        "joaju-pedigree v{} inicializado.",
-        env!("CARGO_PKG_VERSION")
-    );
+    println!("joaju-pedigree v{} initialized.", env!("CARGO_PKG_VERSION"));
 
     let raw_content = if let Some(path) = cli.input {
         std::fs::read_to_string(path)?
@@ -51,9 +48,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if let Some(out_path) = cli.output {
         std::fs::write(&out_path, &svg)?;
-        println!("Heredograma gravado com sucesso em: {}", out_path);
+        println!("Pedigree written successfully to: {}", out_path);
     } else {
-        println!("Heredograma gerado com sucesso ({} bytes).", svg.len());
+        println!("Pedigree generated successfully ({} bytes).", svg.len());
     }
 
     Ok(())

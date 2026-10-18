@@ -2,7 +2,7 @@
 name = "joaju-pedigree"
 version = "0.1.0"
 edition = "2021"
-description = "Motor soberano e biblioteca Rust para manipulação de pedigrees, cálculo de parentesco e renderização de heredogramas clínicos conformes com as diretrizes NSGC/ACMG (paridade com pedtools/R)"
+description = "A high-performance Rust library for pedigree modeling, kinship calculation, and clinical pedigree rendering conforming to NSGC/ACMG guidelines (pedtools/R parity)"
 license = "Apache-2.0"
 repository = "https://codeberg.org/lumenpink/joaju-pedigree"
 homepage = "https://codeberg.org/lumenpink/joaju-pedigree"

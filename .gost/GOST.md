@@ -1,3 +1,19 @@
+# ☭ ГОСТ / GOSPLAN — Especificação Canônica Consolidada
+
+> **Aviso de Integridade Gosplan:**
+> Este documento foi montado automaticamente pelo CCCP (`cccp profile assemble`).
+> A precedência é estrita de baixo para cima: cada camada subsequente sobrepõe as definições anteriores.
+
+### 🌳 Árvore de Herança e Precedência Resolvida:
+1. Camada 1: `https://gost.2lp.in/SPEC.md`
+2. Camada Local Soberana: `CUSTOM.md`
+
+---
+
+<!-- ===================================================================== -->
+<!-- CAMADA 1: https://gost.2lp.in/SPEC.md -->
+<!-- ===================================================================== -->
+
 # GOST — Padrão Técnico para Repositórios Abertos
 **Versão da Norma:** `1.0.0-draft`  
 **Status:** Oficial / Proposta Normativa  
@@ -607,3 +623,16 @@ Quando um repositório necessitar de regras estritas exclusivas que não pertenc
 1. **Regras Documentais (`CUSTOM.md`):** Qualquer arquivo `CUSTOM.md` presente na raiz do projeto é anexado como camada final soberana na compilação do `.gost/GOST.md`.
 2. **Exceções e Calibragens Locais:** Orientações presentes no `CUSTOM.md` (como idioma oficial do projeto, exceções justificadas de arquitetura ou diretrizes específicas de empacotamento) possuem precedência máxima sobre todos os perfis herdados.
 3. **Regras de Validação Locais (`custom_rules.json`):** Se presente, aplica o merge final sobre o `.gost/rules.json`.
+
+---
+
+<!-- ===================================================================== -->
+<!-- CAMADA LOCAL SOBERANA: CUSTOM.md (Precedência Máxima do Repositório) -->
+<!-- ===================================================================== -->
+
+# Local GOST Directives & Overrides
+
+## Language & Documentation Standards
+- **Mandatory Language:** All documentation (`README.md`, docstrings, module documentation, code comments), metadata (`Cargo.toml`), commit messages, tickets, and forge issues **MUST** be written in English.
+- **Terminology Guidelines:** Do NOT use colloquial or ideologically charged terms such as *"sovereign"*, *"soberano"*, or equivalents. Use standard, professional engineering terminology (e.g., *"high-performance"*, *"deterministic"*, *"robust"*, *"resilient"*).
+
