@@ -17,3 +17,17 @@ pub use crate::graph::{
 pub use crate::kinship::KinshipMatrix;
 pub use crate::layout::{LayoutOptions, PedLayout};
 pub use crate::render::{render_svg, ClinicalSymbol, RenderOptions};
+
+pub fn version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_pedigree_rs_version() {
+        assert!(!version().is_empty());
+    }
+}
