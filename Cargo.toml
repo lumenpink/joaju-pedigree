@@ -1,6 +1,6 @@
 [package]
 name = "pedigree-rs"
-version = "0.1.0-dev.1"
+version = "0.1.0"
 edition = "2021"
 description = "Motor soberano e biblioteca Rust para manipulação de pedigrees, cálculo de parentesco e renderização de heredogramas clínicos conformes com as diretrizes NSGC/ACMG (paridade com pedtools/R)"
 license = "Apache-2.0"
@@ -13,7 +13,7 @@ categories = ["science", "data-structures", "command-line-utilities"]
 authors = ["Lumen Pink <hi@lumen.pink>"]
 
 [dependencies]
-ssot-rs = { version = "0.1.0-dev.1", path = "../ssot-rs" }
+ssot-rs = { version = "0.1.0", path = "../ssot-rs" }
 petgraph = "0.7"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
