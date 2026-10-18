@@ -1,6 +1,6 @@
-# pedigreers
+# pedigree-rs
 
-> **pedigreers**: Motor soberano e biblioteca de alta performance em Rust para modelagem genealógica, cálculo de parentesco e renderização vetorial de heredogramas clínicos conformes com as diretrizes da **NSGC** (*National Society of Genetic Counselors*) e **ACMG** (*American College of Medical Genetics*).
+> **pedigree-rs**: Motor soberano e biblioteca de alta performance em Rust para modelagem genealógica, cálculo de parentesco e renderização vetorial de heredogramas clínicos conformes com as diretrizes da **NSGC** (*National Society of Genetic Counselors*) e **ACMG** (*American College of Medical Genetics*).
 
 ---
 
