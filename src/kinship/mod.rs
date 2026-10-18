@@ -9,6 +9,10 @@ pub struct KinshipMatrix {
 }
 
 impl KinshipMatrix {
+    pub fn compute(ped: &Ped) -> Self {
+        compute_kinship_matrix(ped)
+    }
+
     pub fn get(&self, id1: &str, id2: &str) -> Option<f64> {
         let i = self.id_to_idx.get(id1)?;
         let j = self.id_to_idx.get(id2)?;
