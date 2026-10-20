@@ -19,7 +19,27 @@ pub struct PedDirectives {
 }
 
 impl PedDirectives {
+    pub fn is_auto_legend(&self) -> bool {
+        if let Some(val) = self.raw.get("legend") {
+            if val.eq_ignore_ascii_case("auto") || val.eq_ignore_ascii_case("true") {
+                return true;
+            }
+        }
+        if let Some(val) = self.raw.get("auto_legend") {
+            if val.eq_ignore_ascii_case("true")
+                || val.eq_ignore_ascii_case("auto")
+                || val.is_empty()
+            {
+                return true;
+            }
+        }
+        self.raw.contains_key("auto_legend")
+    }
+
     pub fn has_legend(&self) -> bool {
+        if self.is_auto_legend() {
+            return false;
+        }
         self.legend_labels.is_some() || self.raw.contains_key("legend")
     }
 
@@ -53,8 +73,12 @@ pub fn extract_directives(text: &str) -> (PedDirectives, String) {
             if let Some((key, val)) = parse_key_value(directive_body) {
                 let lower_key = key.to_lowercase();
                 if lower_key == "legend" {
-                    let parsed_list = parse_c_vector(&val);
-                    directives.legend_labels = Some(parsed_list);
+                    if val.eq_ignore_ascii_case("auto") || val.eq_ignore_ascii_case("true") {
+                        directives.legend_labels = None;
+                    } else {
+                        let parsed_list = parse_c_vector(&val);
+                        directives.legend_labels = Some(parsed_list);
+                    }
                 } else if lower_key == "legend.type" {
                     let parsed_list = parse_c_vector(&val);
                     directives.legend_types = Some(parsed_list);

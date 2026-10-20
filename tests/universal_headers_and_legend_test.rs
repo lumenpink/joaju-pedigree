@@ -86,6 +86,33 @@ fn test_auto_legend_shortcut() {
 }
 
 #[test]
+fn test_spec_legend_auto_directive() {
+    let block = "%% legend=auto\n\
+                 id,pai,mae,sex,fenotipo,proband\n\
+                 1,0,0,M,wt,0\n\
+                 2,0,0,F,afetado,1\n";
+
+    let (ped, directives) = Ped::from_text(block).expect("Parse pedigree with legend=auto");
+    assert!(
+        directives.is_auto_legend(),
+        "Directive must be recognized as auto legend"
+    );
+    assert!(
+        !directives.has_legend(),
+        "Should not be treated as manual static legend"
+    );
+
+    let layout = ped.compute_layout(&LayoutOptions::default()).unwrap();
+    let render_opts = RenderOptions {
+        auto_legend: directives.is_auto_legend(),
+        ..Default::default()
+    };
+    let svg = ped.render_svg(&layout, &render_opts);
+    assert!(svg.contains("LEGENDA CLÍNICA"));
+    assert!(svg.contains("Probanda") || svg.contains("Probando"));
+}
+
+#[test]
 fn test_mutation_mixed_case_headers_and_quotes() {
     let block = "%% legend = c('Patriarca', 'Matriarca')\n\
                  %% legend.type = c('empty_m', 'empty_f')\n\
