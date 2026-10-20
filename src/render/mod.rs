@@ -654,18 +654,18 @@ fn render_legend_card(
                     ix - 8.0, iy - 8.0
                 ));
                 let arr_target_x = ix - 8.0;
-                let arr_target_y = iy + 8.0;
-                let arr_orig_x = arr_target_x - 10.0;
+                let arr_target_y = iy + 6.0;
+                let arr_orig_x = arr_target_x - 8.0;
                 let arr_orig_y = arr_target_y + 8.0;
                 svg.push_str(&format!(
                     "    <path class=\"proband-arrow\" d=\"M {:.1} {:.1} L {:.1} {:.1} M {:.1} {:.1} L {:.1} {:.1} M {:.1} {:.1} L {:.1} {:.1}\" />\n",
                     arr_orig_x, arr_orig_y, arr_target_x, arr_target_y,
-                    arr_target_x, arr_target_y, arr_target_x - 5.0, arr_target_y,
-                    arr_target_x, arr_target_y, arr_target_x, arr_target_y + 5.0
+                    arr_target_x, arr_target_y, arr_target_x - 4.0, arr_target_y,
+                    arr_target_x, arr_target_y, arr_target_x, arr_target_y + 4.0
                 ));
                 svg.push_str(&format!(
-                    "    <text class=\"proband-lbl\" font-size=\"10\" x=\"{:.1}\" y=\"{:.1}\">P</text>\n",
-                    arr_orig_x - 7.0, arr_orig_y + 2.0
+                    "    <text class=\"proband-lbl\" font-size=\"9\" x=\"{:.1}\" y=\"{:.1}\">P</text>\n",
+                    arr_orig_x - 6.0, arr_orig_y - 2.0
                 ));
             }
         }
