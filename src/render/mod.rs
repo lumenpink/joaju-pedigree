@@ -668,8 +668,8 @@ fn render_legend_symbol(svg: &mut String, ix: f64, iy: f64, sym: LegendSymbolTyp
                 arr_target_x, arr_target_y, b2_x, b2_y
             ));
             svg.push_str(&format!(
-                "    <text class=\"proband-lbl\" font-size=\"9\" font-weight=\"bold\" text-anchor=\"end\" x=\"{:.1}\" y=\"{:.1}\">P</text>\n",
-                arr_orig_x - 3.0, arr_orig_y + 3.0
+                "    <text class=\"proband-lbl\" font-size=\"9\" font-weight=\"bold\" text-anchor=\"end\" dominant-baseline=\"central\" x=\"{:.1}\" y=\"{:.1}\">P</text>\n",
+                arr_orig_x - 3.0, arr_orig_y - 1.0
             ));
         }
         LegendSymbolType::ProbandF => {
@@ -699,8 +699,8 @@ fn render_legend_symbol(svg: &mut String, ix: f64, iy: f64, sym: LegendSymbolTyp
                 arr_target_x, arr_target_y, b2_x, b2_y
             ));
             svg.push_str(&format!(
-                "    <text class=\"proband-lbl\" font-size=\"9\" font-weight=\"bold\" text-anchor=\"end\" x=\"{:.1}\" y=\"{:.1}\">P</text>\n",
-                arr_orig_x - 3.0, arr_orig_y + 3.0
+                "    <text class=\"proband-lbl\" font-size=\"9\" font-weight=\"bold\" text-anchor=\"end\" dominant-baseline=\"central\" x=\"{:.1}\" y=\"{:.1}\">P</text>\n",
+                arr_orig_x - 3.0, arr_orig_y - 1.0
             ));
         }
     }
@@ -986,7 +986,7 @@ fn render_legend_card(
         let cell_w0 = card_w / (row0.len() as f64);
         for (i, item) in row0.iter().enumerate() {
             let ix = card_x + (i as f64 + 0.5) * cell_w0;
-            let iy = card_y + 38.0;
+            let iy = card_y + 36.0;
             let sym = resolve_item_sym(item);
             render_legend_symbol(svg, ix, iy, sym);
             render_legend_label(svg, ix, card_y + 64.0, &item.label);
@@ -995,7 +995,7 @@ fn render_legend_card(
         let cell_w1 = card_w / (row1.len() as f64);
         for (i, item) in row1.iter().enumerate() {
             let ix = card_x + (i as f64 + 0.5) * cell_w1;
-            let iy = card_y + 95.0;
+            let iy = card_y + 90.0;
             let sym = resolve_item_sym(item);
             render_legend_symbol(svg, ix, iy, sym);
             render_legend_label(svg, ix, card_y + 122.0, &item.label);
