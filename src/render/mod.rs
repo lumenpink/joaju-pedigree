@@ -932,21 +932,46 @@ fn render_legend_card(
         card_y + 24.0
     ));
 
+    let proband_sex = ped.members.values().find(|m| m.proband).map(|m| m.sex);
+    let resolve_item_sym = |item: &LegendItem| -> LegendSymbolType {
+        match item.symbol {
+            LegendSymbolType::Proband => match proband_sex {
+                Some(Sex::Female) => LegendSymbolType::ProbandF,
+                Some(Sex::Male) => LegendSymbolType::ProbandM,
+                _ => {
+                    if item.label.to_lowercase().contains("feminino")
+                        || item.label.contains("(F)")
+                    {
+                        LegendSymbolType::ProbandF
+                    } else {
+                        LegendSymbolType::ProbandM
+                    }
+                }
+            },
+            LegendSymbolType::ProbandM => {
+                if let Some(Sex::Female) = proband_sex {
+                    LegendSymbolType::ProbandF
+                } else {
+                    LegendSymbolType::ProbandM
+                }
+            }
+            LegendSymbolType::ProbandF => {
+                if let Some(Sex::Male) = proband_sex {
+                    LegendSymbolType::ProbandM
+                } else {
+                    LegendSymbolType::ProbandF
+                }
+            }
+            other => other,
+        }
+    };
+
     if !is_two_rows {
         let cell_w = card_w / (items.len() as f64);
         for (i, item) in items.iter().enumerate() {
             let ix = card_x + (i as f64 + 0.5) * cell_w;
             let iy = card_y + 38.0;
-            let sym = if (item.symbol == LegendSymbolType::Proband
-                || item.symbol == LegendSymbolType::ProbandM)
-                && (item.label.to_lowercase().contains("probanda")
-                    || item.label.contains("(F)")
-                    || item.label.to_lowercase().contains("feminino"))
-            {
-                LegendSymbolType::ProbandF
-            } else {
-                item.symbol
-            };
+            let sym = resolve_item_sym(item);
             render_legend_symbol(svg, ix, iy, sym);
             render_legend_label(svg, ix, card_y + 64.0, &item.label);
         }
@@ -959,16 +984,7 @@ fn render_legend_card(
         for (i, item) in row0.iter().enumerate() {
             let ix = card_x + (i as f64 + 0.5) * cell_w0;
             let iy = card_y + 38.0;
-            let sym = if (item.symbol == LegendSymbolType::Proband
-                || item.symbol == LegendSymbolType::ProbandM)
-                && (item.label.to_lowercase().contains("probanda")
-                    || item.label.contains("(F)")
-                    || item.label.to_lowercase().contains("feminino"))
-            {
-                LegendSymbolType::ProbandF
-            } else {
-                item.symbol
-            };
+            let sym = resolve_item_sym(item);
             render_legend_symbol(svg, ix, iy, sym);
             render_legend_label(svg, ix, card_y + 64.0, &item.label);
         }
@@ -977,16 +993,7 @@ fn render_legend_card(
         for (i, item) in row1.iter().enumerate() {
             let ix = card_x + (i as f64 + 0.5) * cell_w1;
             let iy = card_y + 95.0;
-            let sym = if (item.symbol == LegendSymbolType::Proband
-                || item.symbol == LegendSymbolType::ProbandM)
-                && (item.label.to_lowercase().contains("probanda")
-                    || item.label.contains("(F)")
-                    || item.label.to_lowercase().contains("feminino"))
-            {
-                LegendSymbolType::ProbandF
-            } else {
-                item.symbol
-            };
+            let sym = resolve_item_sym(item);
             render_legend_symbol(svg, ix, iy, sym);
             render_legend_label(svg, ix, card_y + 122.0, &item.label);
         }
