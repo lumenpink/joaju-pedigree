@@ -18,22 +18,60 @@ pub struct PedDirectives {
     pub childless: Vec<(String, String, crate::core::ChildlessType)>,
 }
 
+use crate::render::AutoLegendMode;
+
 impl PedDirectives {
-    pub fn is_auto_legend(&self) -> bool {
+    pub fn auto_legend_mode(&self) -> AutoLegendMode {
         if let Some(val) = self.raw.get("legend") {
-            if val.eq_ignore_ascii_case("auto") || val.eq_ignore_ascii_case("true") {
-                return true;
+            let v = val.to_lowercase();
+            if v == "full"
+                || v == "complete"
+                || v == "auto-full"
+                || v == "auto_full"
+                || v == "completa"
+            {
+                return AutoLegendMode::Full;
+            }
+            if v == "auto" || v == "generic" || v == "generica" || v == "compact" || v == "true" {
+                return AutoLegendMode::Generic;
+            }
+        }
+        if let Some(val) = self.raw.get("legend.mode") {
+            let v = val.to_lowercase();
+            if v == "full"
+                || v == "complete"
+                || v == "auto-full"
+                || v == "auto_full"
+                || v == "completa"
+            {
+                return AutoLegendMode::Full;
+            }
+            if v == "auto" || v == "generic" || v == "generica" || v == "compact" {
+                return AutoLegendMode::Generic;
             }
         }
         if let Some(val) = self.raw.get("auto_legend") {
-            if val.eq_ignore_ascii_case("true")
-                || val.eq_ignore_ascii_case("auto")
-                || val.is_empty()
+            let v = val.to_lowercase();
+            if v == "full"
+                || v == "complete"
+                || v == "auto-full"
+                || v == "auto_full"
+                || v == "completa"
             {
-                return true;
+                return AutoLegendMode::Full;
+            }
+            if v == "true" || v == "auto" || v == "generic" || v.is_empty() {
+                return AutoLegendMode::Generic;
             }
         }
-        self.raw.contains_key("auto_legend")
+        if self.raw.contains_key("auto_legend") {
+            return AutoLegendMode::Generic;
+        }
+        AutoLegendMode::None
+    }
+
+    pub fn is_auto_legend(&self) -> bool {
+        self.auto_legend_mode() != AutoLegendMode::None
     }
 
     pub fn has_legend(&self) -> bool {
@@ -73,7 +111,17 @@ pub fn extract_directives(text: &str) -> (PedDirectives, String) {
             for (key, val) in parse_directives_line(directive_body) {
                 let lower_key = key.to_lowercase();
                 if lower_key == "legend" {
-                    if val.eq_ignore_ascii_case("auto") || val.eq_ignore_ascii_case("true") {
+                    let v = val.to_lowercase();
+                    if v == "auto"
+                        || v == "true"
+                        || v == "full"
+                        || v == "complete"
+                        || v == "auto-full"
+                        || v == "auto_full"
+                        || v == "completa"
+                        || v == "generic"
+                        || v == "compact"
+                    {
                         directives.legend_labels = None;
                     } else {
                         let parsed_list = parse_c_vector(&val);

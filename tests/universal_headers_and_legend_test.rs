@@ -76,13 +76,42 @@ fn test_auto_legend_shortcut() {
     };
 
     let svg = ped.render_svg(&layout, &render_opts);
-    // Como a família tem Homem, Mulher, Afetado, Portador, Falecido e Probando, todos devem estar na legenda automaticamente:
-    assert!(svg.contains("Homem"));
-    assert!(svg.contains("Mulher"));
+    // NUNCA deve conter "Homem" ou "Mulher" (terminologia inclusiva e precisa):
+    assert!(!svg.contains("Homem"), "Must never use Homem");
+    assert!(!svg.contains("Mulher"), "Must never use Mulher");
+    assert!(svg.contains("Sexo masculino"));
+    assert!(svg.contains("Sexo feminino"));
     assert!(svg.contains("Afetado"));
     assert!(svg.contains("Portador"));
     assert!(svg.contains("Falecido"));
     assert!(svg.contains("Probando"));
+}
+
+#[test]
+fn test_spec_legend_auto_full_mode() {
+    let block = "%% legend=full\n\
+                 id,pai,mae,sex,fenotipo,proband\n\
+                 1,0,0,M,wt,0\n\
+                 2,0,0,F,wt,0\n\
+                 3,1,2,M,het,0\n\
+                 4,1,2,F,afetado,1\n";
+
+    let (ped, directives) = Ped::from_text(block).expect("Parse pedigree with legend=full");
+    assert_eq!(directives.auto_legend_mode(), AutoLegendMode::Full);
+
+    let layout = ped.compute_layout(&LayoutOptions::default()).unwrap();
+    let render_opts = RenderOptions {
+        auto_legend_mode: directives.auto_legend_mode(),
+        ..Default::default()
+    };
+    let svg = ped.render_svg(&layout, &render_opts);
+
+    assert!(!svg.contains("Homem"));
+    assert!(!svg.contains("Mulher"));
+    assert!(svg.contains("Sexo masculino") && svg.contains("normal"));
+    assert!(svg.contains("Sexo feminino") && svg.contains("normal"));
+    assert!(svg.contains("Sexo masculino") && svg.contains("portador"));
+    assert!(svg.contains("Probanda") && svg.contains("(sexo feminino)"));
 }
 
 #[test]
@@ -151,7 +180,7 @@ fn test_mutation_mixed_case_headers_and_quotes() {
 
 #[test]
 fn test_mutation_auto_legend_only_present_traits() {
-    // Apenas homens saudáveis sem probando e sem falecido
+    // Apenas indivíduos do sexo masculino sem probando e sem falecido
     let csv_data = "id,pai,mae,sexo\n\
                     1,0,0,1\n\
                     2,0,0,1\n";
@@ -162,10 +191,12 @@ fn test_mutation_auto_legend_only_present_traits() {
         ..Default::default()
     };
     let svg = ped.render_svg(&layout, &render_opts);
-    assert!(svg.contains("Homem"));
+    assert!(!svg.contains("Homem"));
+    assert!(!svg.contains("Mulher"));
+    assert!(svg.contains("Sexo masculino"));
     assert!(
-        !svg.contains("Mulher"),
-        "Não deve conter Mulher se não houver mulheres"
+        !svg.contains("Sexo feminino"),
+        "Não deve conter Sexo feminino se não houver fêmeas"
     );
     assert!(
         !svg.contains("Afetado"),

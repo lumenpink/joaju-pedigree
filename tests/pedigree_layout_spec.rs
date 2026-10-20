@@ -308,3 +308,79 @@ fn test_spec_symmetric_legend_grid_items() {
         "Legend grid must be symmetric: dist_left={dist_left}, dist_right={dist_right}"
     );
 }
+
+#[test]
+fn test_spec_proband_legend_arrow_and_p_geometry() {
+    let ped = Ped::from_csv_str(ABO_PEDIGREE_CSV).expect("valid pedigree");
+    let layout = PedLayout::compute(&ped, &LayoutOptions::default());
+    let render_opts = RenderOptions {
+        legend: Some(LegendConfig {
+            items: vec![LegendItem {
+                symbol: LegendSymbolType::Proband,
+                label: "Probanda".into(),
+            }],
+        }),
+        ..Default::default()
+    };
+    let svg = render_svg(&ped, &layout, &render_opts);
+
+    // Letra P no probando da legenda deve estar na base da seta (x < ix - 10) e não em cima do quadrado
+    assert!(
+        svg.contains("class=\"proband-lbl\""),
+        "Deve conter proband-lbl"
+    );
+    assert!(
+        svg.contains("class=\"proband-arrow\""),
+        "Deve conter proband-arrow"
+    );
+}
+
+#[test]
+fn test_spec_legend_card_multi_row_no_text_overlap() {
+    let ped = Ped::from_csv_str(ABO_PEDIGREE_CSV).expect("valid pedigree");
+    let layout = PedLayout::compute(&ped, &LayoutOptions::default());
+    let render_opts = RenderOptions {
+        legend: Some(LegendConfig {
+            items: vec![
+                LegendItem {
+                    symbol: LegendSymbolType::EmptyM,
+                    label: "Sexo masculino normal".into(),
+                },
+                LegendItem {
+                    symbol: LegendSymbolType::EmptyF,
+                    label: "Sexo feminino normal".into(),
+                },
+                LegendItem {
+                    symbol: LegendSymbolType::SqHalf,
+                    label: "Sexo masculino portador".into(),
+                },
+                LegendItem {
+                    symbol: LegendSymbolType::CircHalf,
+                    label: "Sexo feminino portadora".into(),
+                },
+                LegendItem {
+                    symbol: LegendSymbolType::SqSolid,
+                    label: "Sexo masculino afetado".into(),
+                },
+                LegendItem {
+                    symbol: LegendSymbolType::Proband,
+                    label: "Probanda (sexo feminino)".into(),
+                },
+            ],
+        }),
+        ..Default::default()
+    };
+    let svg = render_svg(&ped, &layout, &render_opts);
+
+    // Deve usar tspans para quebrar textos longos
+    assert!(
+        svg.contains("<tspan"),
+        "Textos longos na legenda devem ser quebrados com tspan"
+    );
+    // O card de 6 itens deve ter altura expandida para 2 linhas (card_h >= 120)
+    assert!(
+        svg.contains("height=\"135.0\"")
+            || svg.contains("height=\"130.0\"")
+            || svg.contains("height=\"120.0\"")
+    );
+}

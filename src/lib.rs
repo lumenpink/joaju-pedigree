@@ -37,7 +37,7 @@ pub use crate::graph::{
 };
 pub use crate::kinship::{compute_kinship_matrix, KinshipMatrix};
 pub use crate::layout::{LayoutOptions, PedLayout};
-pub use crate::render::{render_svg, ClinicalSymbol, RenderOptions};
+pub use crate::render::{render_svg, AutoLegendMode, ClinicalSymbol, RenderOptions};
 
 pub fn version() -> &'static str {
     env!("CARGO_PKG_VERSION")

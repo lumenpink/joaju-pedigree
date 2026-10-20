@@ -10,5 +10,6 @@ pub use crate::graph::{
 pub use crate::kinship::KinshipMatrix;
 pub use crate::layout::{LayoutOptions, PedLayout};
 pub use crate::render::{
-    render_svg, ClinicalSymbol, LegendConfig, LegendItem, LegendSymbolType, RenderOptions,
+    render_svg, AutoLegendMode, ClinicalSymbol, LegendConfig, LegendItem, LegendSymbolType,
+    RenderOptions,
 };
