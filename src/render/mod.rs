@@ -654,7 +654,7 @@ fn render_legend_card(
                     ix - 8.0, iy - 8.0
                 ));
                 let arr_target_x = ix - 8.0;
-                let arr_target_y = iy + 6.0;
+                let arr_target_y = iy + 4.0;
                 let arr_orig_x = arr_target_x - 8.0;
                 let arr_orig_y = arr_target_y + 8.0;
                 svg.push_str(&format!(
@@ -665,7 +665,7 @@ fn render_legend_card(
                 ));
                 svg.push_str(&format!(
                     "    <text class=\"proband-lbl\" font-size=\"9\" x=\"{:.1}\" y=\"{:.1}\">P</text>\n",
-                    arr_orig_x - 6.0, arr_orig_y - 2.0
+                    ix - 16.0, iy - 2.0
                 ));
             }
         }
