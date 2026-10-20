@@ -302,7 +302,171 @@ impl PedLayout {
             }
         }
 
-        // Pass 3: Global Left Margin Normalization
+        // Pass 3: Top-Down Re-Centering (re-alinha filhos diretamente sob o ponto médio conjugal final dos pais)
+        for gen in 2..=max_gen {
+            if let Some(ids) = gen_ordered_ids.get(&gen) {
+                let mut sib_groups: HashMap<(Option<String>, Option<String>), Vec<String>> =
+                    HashMap::new();
+                for id in ids {
+                    let ind = &ped.members[id];
+                    if ind.fid.is_some() || ind.mid.is_some() {
+                        sib_groups
+                            .entry((ind.fid.clone(), ind.mid.clone()))
+                            .or_default()
+                            .push(id.clone());
+                    }
+                }
+
+                let mut target_xs: HashMap<String, f64> = HashMap::new();
+                for (parents, sibs) in &sib_groups {
+                    let k = sibs.len() as f64;
+                    let p_mid = match parents {
+                        (Some(f), Some(m)) => {
+                            if let Some((x1, x2, _)) =
+                                get_union_segment(f, m, &coords, &gen_ordered_ids, &depths)
+                            {
+                                (x1 + x2) / 2.0
+                            } else {
+                                match (coords.get(f), coords.get(m)) {
+                                    (Some(cf), Some(cm)) => (cf.x + cm.x) / 2.0,
+                                    (Some(cf), None) => cf.x,
+                                    (None, Some(cm)) => cm.x,
+                                    _ => options.left_margin,
+                                }
+                            }
+                        }
+                        (Some(f), None) => {
+                            coords.get(f).map(|c| c.x).unwrap_or(options.left_margin)
+                        }
+                        (None, Some(m)) => {
+                            coords.get(m).map(|c| c.x).unwrap_or(options.left_margin)
+                        }
+                        _ => options.left_margin,
+                    };
+
+                    for (j, sib_id) in sibs.iter().enumerate() {
+                        let offset = (j as f64 - (k - 1.0) / 2.0) * options.x_spacing;
+                        target_xs.insert(sib_id.clone(), p_mid + offset);
+                    }
+                }
+
+                // Mantém cônjuges externos na geração
+                for (i, id) in ids.iter().enumerate() {
+                    if !target_xs.contains_key(id) {
+                        let mut found_spouse_x = None;
+                        for spouse in ped.spouses(id) {
+                            if let Some(&sx) = target_xs.get(spouse) {
+                                let s_idx = ids.iter().position(|x| x == spouse).unwrap_or(i);
+                                if i < s_idx {
+                                    found_spouse_x = Some(sx - options.x_spacing);
+                                } else {
+                                    found_spouse_x = Some(sx + options.x_spacing);
+                                }
+                                break;
+                            }
+                        }
+                        let tx = found_spouse_x.unwrap_or_else(|| {
+                            coords
+                                .get(id)
+                                .map(|c| c.x)
+                                .unwrap_or(options.left_margin + (i as f64) * options.x_spacing)
+                        });
+                        target_xs.insert(id.clone(), tx);
+                    }
+                }
+
+                let mut curr_x = f64::NEG_INFINITY;
+                for id in ids {
+                    let ideal_x = target_xs.get(id).copied().unwrap_or_else(|| coords[id].x);
+                    let actual_x = if curr_x.is_infinite() {
+                        ideal_x
+                    } else {
+                        ideal_x.max(curr_x + options.x_spacing)
+                    };
+                    curr_x = actual_x;
+                    if let Some(nc) = coords.get_mut(id) {
+                        nc.x = actual_x;
+                    }
+                }
+            }
+        }
+
+        // Pass 3b: Bottom-Up Re-centering for top generation (G1 founders) over their children
+        let top_gen = 1;
+        if let Some(ids) = gen_ordered_ids.get(&top_gen) {
+            let mut target_xs: HashMap<String, f64> = HashMap::new();
+            let mut seen_pairs = std::collections::HashSet::new();
+            for id in ids {
+                for spouse in ped.spouses(id) {
+                    let key = if id.as_str() < spouse {
+                        format!("{}:{}", id, spouse)
+                    } else {
+                        format!("{}:{}", spouse, id)
+                    };
+                    if seen_pairs.insert(key) {
+                        let children: Vec<String> = ped
+                            .children(id)
+                            .into_iter()
+                            .filter(|&c| {
+                                let ind = &ped.members[c];
+                                (ind.fid.as_deref() == Some(id)
+                                    && ind.mid.as_deref() == Some(spouse))
+                                    || (ind.fid.as_deref() == Some(spouse)
+                                        && ind.mid.as_deref() == Some(id))
+                            })
+                            .map(|s| s.to_string())
+                            .collect();
+
+                        let child_xs: Vec<f64> = children
+                            .iter()
+                            .filter_map(|cid| coords.get(cid).map(|c| c.x))
+                            .collect();
+
+                        if !child_xs.is_empty() {
+                            let min_c = child_xs.iter().copied().fold(f64::INFINITY, f64::min);
+                            let max_c = child_xs.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+                            let children_mid = (min_c + max_c) / 2.0;
+
+                            let idx_id = ids.iter().position(|x| x == id).unwrap_or(0);
+                            let idx_sp = ids.iter().position(|x| x == spouse).unwrap_or(1);
+                            if idx_id < idx_sp {
+                                target_xs
+                                    .insert(id.clone(), children_mid - options.x_spacing / 2.0);
+                                target_xs.insert(
+                                    spouse.to_string(),
+                                    children_mid + options.x_spacing / 2.0,
+                                );
+                            } else {
+                                target_xs.insert(
+                                    spouse.to_string(),
+                                    children_mid - options.x_spacing / 2.0,
+                                );
+                                target_xs
+                                    .insert(id.clone(), children_mid + options.x_spacing / 2.0);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if !target_xs.is_empty() {
+                let mut curr_x = f64::NEG_INFINITY;
+                for id in ids {
+                    let ideal_x = target_xs.get(id).copied().unwrap_or_else(|| coords[id].x);
+                    let actual_x = if curr_x.is_infinite() {
+                        ideal_x
+                    } else {
+                        ideal_x.max(curr_x + options.x_spacing)
+                    };
+                    curr_x = actual_x;
+                    if let Some(nc) = coords.get_mut(id) {
+                        nc.x = actual_x;
+                    }
+                }
+            }
+        }
+
+        // Pass 4: Global Left Margin Normalization
         let min_x = coords.values().map(|c| c.x).fold(f64::INFINITY, f64::min);
         let shift = if min_x < options.left_margin {
             options.left_margin - min_x
@@ -343,12 +507,16 @@ impl PedLayout {
                             .map(|s| s.to_string())
                             .collect();
 
+                        let (x1, x2, y) =
+                            get_union_segment(f, m, &coords, &gen_ordered_ids, &depths)
+                                .unwrap_or((cf.x, cm.x, cf.y));
+
                         unions.push(UnionLine {
                             p1_id: f.clone(),
                             p2_id: m.clone(),
-                            x1: cf.x,
-                            x2: cm.x,
-                            y: cf.y,
+                            x1,
+                            x2,
+                            y,
                             is_consanguineous,
                             is_divorced,
                             childless,
@@ -501,4 +669,43 @@ fn sort_by_parent_position(
 
     with_pos.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
     with_pos.into_iter().map(|(_, id)| id).collect()
+}
+
+fn get_union_segment(
+    f: &str,
+    m: &str,
+    coords: &HashMap<String, NodeCoord>,
+    gen_ordered_ids: &BTreeMap<usize, Vec<String>>,
+    depths: &HashMap<String, usize>,
+) -> Option<(f64, f64, f64)> {
+    let cf = coords.get(f)?;
+    let cm = coords.get(m)?;
+    let p_gen = depths.get(f).copied().unwrap_or(cf.generation);
+    let y = cf.y;
+
+    if let Some(ordered) = gen_ordered_ids.get(&p_gen) {
+        let idx_f = ordered.iter().position(|x| x == f);
+        let idx_m = ordered.iter().position(|x| x == m);
+        if let (Some(if_), Some(im_)) = (idx_f, idx_m) {
+            let diff = if_.abs_diff(im_);
+            if diff <= 1 {
+                return Some((cf.x, cm.x, y));
+            } else {
+                // Convenção serial de múltiplos cônjuges (kinship2/pedtools):
+                // Se m está à direita/extremidade externa de f
+                if im_ > if_ {
+                    let prev_id = &ordered[im_ - 1];
+                    if let Some(c_prev) = coords.get(prev_id) {
+                        return Some((c_prev.x, cm.x, y));
+                    }
+                } else {
+                    let next_id = &ordered[im_ + 1];
+                    if let Some(c_next) = coords.get(next_id) {
+                        return Some((cm.x, c_next.x, y));
+                    }
+                }
+            }
+        }
+    }
+    Some((cf.x, cm.x, y))
 }
