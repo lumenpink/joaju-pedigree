@@ -403,36 +403,44 @@ fn render_individual(svg: &mut String, ind: &Individual, x: f64, y: f64, show_id
 
     // Probando (Seta 45° no canto inferior esquerdo)
     if ind.proband {
-        let arr_target_x = x - 17.0;
-        let arr_target_y = y + 17.0;
-        let arr_orig_x = arr_target_x - 15.0;
-        let arr_orig_y = arr_target_y + 15.0;
+        let arr_target_x = x - 16.0;
+        let arr_target_y = y + 14.0;
+        let arr_orig_x = arr_target_x - 12.0;
+        let arr_orig_y = arr_target_y + 10.0;
 
         svg.push_str(&format!(
             "  <!-- Probando Seta e Marcador P -->\n  <path class=\"proband-arrow\" d=\"M {:.1} {:.1} L {:.1} {:.1} M {:.1} {:.1} L {:.1} {:.1} M {:.1} {:.1} L {:.1} {:.1}\" />\n",
             arr_orig_x, arr_orig_y, arr_target_x, arr_target_y,
-            arr_target_x, arr_target_y, arr_target_x - 7.0, arr_target_y,
-            arr_target_x, arr_target_y, arr_target_x, arr_target_y + 7.0
+            arr_target_x, arr_target_y, arr_target_x - 6.0, arr_target_y,
+            arr_target_x, arr_target_y, arr_target_x, arr_target_y + 6.0
         ));
         svg.push_str(&format!(
             "  <text class=\"proband-lbl\" x=\"{:.1}\" y=\"{:.1}\">P</text>\n",
-            arr_orig_x - 6.0,
-            arr_orig_y + 6.0
+            arr_orig_x - 8.0,
+            arr_orig_y + 3.0
         ));
     }
 
     // Identificador ou Rótulo Multilinhas
     if let Some(ref lbl) = ind.label {
-        let lines: Vec<&str> = if lbl.contains("\\n") {
-            lbl.split("\\n").collect()
+        let lines: Vec<String> = if lbl.contains("\\n") {
+            lbl.split("\\n").map(|s| s.to_string()).collect()
+        } else if lbl.contains('\n') {
+            lbl.split('\n').map(|s| s.to_string()).collect()
+        } else if let Some(bracket_pos) = lbl.find(" [") {
+            vec![
+                lbl[..bracket_pos].trim().to_string(),
+                lbl[bracket_pos..].trim().to_string(),
+            ]
         } else {
-            lbl.split('\n').collect()
+            vec![lbl.clone()]
         };
+        let label_base_y = if ind.proband { y + 34.0 } else { y + 28.0 };
         for (i, line) in lines.iter().enumerate() {
             svg.push_str(&format!(
                 "  <text class=\"lbl\" x=\"{:.1}\" y=\"{:.1}\">{}</text>\n",
                 x,
-                y + 30.0 + (i as f64) * 14.0,
+                label_base_y + (i as f64) * 14.0,
                 line
             ));
         }
