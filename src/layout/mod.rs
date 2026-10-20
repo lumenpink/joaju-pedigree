@@ -466,21 +466,21 @@ impl PedLayout {
             }
         }
 
-        // Pass 4: Global Left Margin Normalization
+        // Pass 4: Symmetric Margin Normalization (centralização matemática no viewBox)
         let min_x = coords.values().map(|c| c.x).fold(f64::INFINITY, f64::min);
-        let shift = if min_x < options.left_margin {
-            options.left_margin - min_x
-        } else {
-            0.0
-        };
-
-        if shift > 0.0 {
-            for c in coords.values_mut() {
-                c.x += shift;
-            }
+        let max_x_raw = coords
+            .values()
+            .map(|c| c.x)
+            .fold(f64::NEG_INFINITY, f64::max);
+        let content_width = max_x_raw - min_x;
+        let target_width = (content_width + 2.0 * options.left_margin).max(440.0);
+        let side_margin = (target_width - content_width) / 2.0;
+        let shift = side_margin - min_x;
+        for c in coords.values_mut() {
+            c.x += shift;
         }
 
-        let max_x = coords.values().map(|c| c.x).fold(100.0, f64::max);
+        let width = target_width;
 
         // 4. Identifica e constrói linhas de união e consanguinidade
         let mut unions = Vec::new();
@@ -551,7 +551,6 @@ impl PedLayout {
             }
         }
 
-        let width = (max_x + options.left_margin + 50.0).max(440.0);
         let height = options.top_margin + (max_gen as f64) * options.y_spacing + 120.0;
 
         Self {

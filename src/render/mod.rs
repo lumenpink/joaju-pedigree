@@ -552,7 +552,7 @@ fn render_legend_card(
 
     let card_w = (width - 40.0).max(380.0);
     let card_h = 75.0;
-    let card_x = 20.0;
+    let card_x = (width - card_w) / 2.0;
     let card_y = height - card_h - 15.0;
 
     svg.push_str("  <!-- Card de Legenda Vetorial Integrado -->\n");
@@ -574,9 +574,9 @@ fn render_legend_card(
         card_y + 24.0
     ));
 
-    let step = (card_w - 30.0) / (items.len() as f64);
+    let cell_w = card_w / (items.len() as f64);
     for (i, item) in items.iter().enumerate() {
-        let ix = card_x + 25.0 + (i as f64) * step;
+        let ix = card_x + (i as f64 + 0.5) * cell_w;
         let iy = card_y + 44.0;
 
         match item.symbol {

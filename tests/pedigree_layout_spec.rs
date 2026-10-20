@@ -253,3 +253,58 @@ fn test_spec_comparative_pedtools_vs_kinship2_all_generations() {
         assert!(!svg.is_empty(), "{name} svg should not be empty");
     }
 }
+
+#[test]
+fn test_spec_symmetric_node_margins() {
+    let ped = Ped::from_csv_str(ABO_PEDIGREE_CSV).expect("valid pedigree");
+    let layout = PedLayout::compute(&ped, &LayoutOptions::default());
+    let min_x = layout
+        .coords
+        .values()
+        .map(|c| c.x)
+        .fold(f64::INFINITY, f64::min);
+    let max_x = layout
+        .coords
+        .values()
+        .map(|c| c.x)
+        .fold(f64::NEG_INFINITY, f64::max);
+    let left_margin = min_x;
+    let right_margin = layout.width - max_x;
+    assert!(
+        (left_margin - right_margin).abs() < 1.0,
+        "Left margin ({left_margin}) must equal right margin ({right_margin}) for symmetric centering in viewBox"
+    );
+}
+
+#[test]
+fn test_spec_symmetric_legend_grid_items() {
+    let ped = Ped::from_csv_str(ABO_PEDIGREE_CSV).expect("valid pedigree");
+    let layout = PedLayout::compute(&ped, &LayoutOptions::default());
+    let svg = render_svg(&ped, &layout, &RenderOptions::default());
+
+    let legend_section = svg.split("class=\"card-legend\"").nth(1).unwrap_or("");
+    let mut item_xs = Vec::new();
+    for line in legend_section.lines() {
+        if line.contains("class=\"legend-lbl\"") {
+            if let Some(x_str) = line.split("x=\"").nth(1).and_then(|s| s.split('"').next()) {
+                if let Ok(x_val) = x_str.parse::<f64>() {
+                    item_xs.push(x_val);
+                }
+            }
+        }
+    }
+
+    assert!(item_xs.len() >= 2, "Legend must contain at least 2 items");
+    let first_x = item_xs[0];
+    let last_x = item_xs[item_xs.len() - 1];
+    let card_x = 20.0;
+    let card_w = (layout.width.max(420.0) - 40.0).max(380.0);
+    let card_right = card_x + card_w;
+
+    let dist_left = first_x - card_x;
+    let dist_right = card_right - last_x;
+    assert!(
+        (dist_left - dist_right).abs() < 1.0,
+        "Legend grid must be symmetric: dist_left={dist_left}, dist_right={dist_right}"
+    );
+}
