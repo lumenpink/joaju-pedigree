@@ -95,9 +95,9 @@ fn test_spec_union_connector_line_reaches_child_in_svg() {
         let expected_line = format!(
             "x1=\"{:.1}\" y1=\"{:.1}\" x2=\"{:.1}\" y2=\"{:.1}\"",
             min_span,
-            c4.y + 40.0,
+            c4.y + 55.0,
             max_span,
-            c4.y + 40.0
+            c4.y + 55.0
         );
         assert!(
             svg.contains(&expected_line),

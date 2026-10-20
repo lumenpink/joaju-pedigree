@@ -15,7 +15,7 @@ impl Default for LayoutOptions {
         Self {
             symbol_size: 28.0,
             x_spacing: 95.0,
-            y_spacing: 100.0,
+            y_spacing: 120.0,
             top_margin: 50.0,
             left_margin: 50.0,
         }

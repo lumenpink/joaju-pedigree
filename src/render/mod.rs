@@ -172,7 +172,7 @@ pub fn render_svg(ped: &Ped, layout: &PedLayout, options: &RenderOptions) -> Str
         // Descendência se houver filhos
         if !u.children.is_empty() {
             let mid_x = (x_start + x_end) / 2.0;
-            let sib_bar_y = u.y + 40.0;
+            let sib_bar_y = u.y + 55.0;
 
             // Haste vertical descendo da união
             svg.push_str(&format!(
