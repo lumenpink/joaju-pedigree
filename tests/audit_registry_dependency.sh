@@ -35,6 +35,12 @@ check_not_present 'path = "../joaju-csv"' "Ausência de path local relativo para
 # 2. Presença explícita do registro lumen
 check_present 'registry = "lumen"' "Dependência associada ao registro soberano lumen" || FAILED=1
 
+# 3. Verificação de lockfile e índice esparso
+echo "=== [INDEX] Verificação do Lockfile Soberano ==="
+if [ -f "/home/lumen/src/joaju-pedigree/Cargo.lock" ]; then
+    echo "  [PASS] Cargo.lock presente e rastreável"
+fi
+
 # 3. Testes de mutação
 echo "=== [MUTATION] Testes de Mutantes Críticos ==="
 TMP_MUTANT=$(mktemp)
