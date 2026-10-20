@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Migração da dependência joaju-csv para o registro soberano lumen e publicação da crate v0.1.0 (closes #18).
 - Renomeação canônica de package e repositório para `pedigree-rs` (`pedigree_rs`) em conformidade com o padrão GOST.
 - Integração da dependência local `ssot-rs` para resolução de datasets.
 - Suporte universal a todos os cabeçalhos e sinônimos originais do pedtools e Joaju (`individual`/`id`, `father`/`dadid`/`fid`/`pai`, `mother`/`momid`/`mid`/`mae`, `fenotipo`/`afetado`/`affected`).
