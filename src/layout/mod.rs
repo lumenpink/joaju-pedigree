@@ -14,8 +14,8 @@ impl Default for LayoutOptions {
     fn default() -> Self {
         Self {
             symbol_size: 28.0,
-            x_spacing: 65.0,
-            y_spacing: 95.0,
+            x_spacing: 80.0,
+            y_spacing: 100.0,
             top_margin: 50.0,
             left_margin: 50.0,
         }
@@ -127,30 +127,196 @@ impl PedLayout {
             gen_groups.entry(g).or_default().push(id.clone());
         }
 
-        // 3. Atribui coordenadas (X, Y) com agrupamento de cônjuges adjacentes
-        let mut coords = HashMap::new();
-        let mut max_x: f64 = 100.0;
+        // 3. Atribui coordenadas (X, Y) com centralização de fratria e cônjuges
+        let mut coords: HashMap<String, NodeCoord> = HashMap::new();
         let max_gen = gen_groups.keys().copied().max().unwrap_or(1);
 
+        // Mapa de ordem de cada geração para uso nos passes
+        let mut gen_ordered_ids: BTreeMap<usize, Vec<String>> = BTreeMap::new();
+
+        // Pass 1: Top-Down (posiciona nós orientados aos pais na geração anterior)
         for (gen, ids) in &gen_groups {
-            let ordered_ids = order_generation_members(ped, ids);
+            let sorted_ids = if *gen > 1 {
+                sort_by_parent_position(ped, ids, &coords)
+            } else {
+                ids.clone()
+            };
+            let ordered_ids = order_generation_members(ped, &sorted_ids);
             let y = options.top_margin + ((*gen as f64) - 1.0) * options.y_spacing;
-            for (i, id) in ordered_ids.iter().enumerate() {
-                let x = options.left_margin + (i as f64) * options.x_spacing;
-                if x > max_x {
-                    max_x = x;
+
+            // Agrupa por irmãos (mesmo pai e mãe)
+            let mut sib_groups: HashMap<(Option<String>, Option<String>), Vec<String>> =
+                HashMap::new();
+            for id in &ordered_ids {
+                let ind = &ped.members[id];
+                if ind.fid.is_some() || ind.mid.is_some() {
+                    sib_groups
+                        .entry((ind.fid.clone(), ind.mid.clone()))
+                        .or_default()
+                        .push(id.clone());
                 }
+            }
+
+            // Atribui posições alvo
+            let mut target_xs: HashMap<String, f64> = HashMap::new();
+            for (parents, sibs) in &sib_groups {
+                let k = sibs.len() as f64;
+                let p_mid = match parents {
+                    (Some(f), Some(m)) => match (coords.get(f), coords.get(m)) {
+                        (Some(cf), Some(cm)) => (cf.x + cm.x) / 2.0,
+                        (Some(cf), None) => cf.x,
+                        (None, Some(cm)) => cm.x,
+                        _ => options.left_margin,
+                    },
+                    (Some(f), None) => coords.get(f).map(|c| c.x).unwrap_or(options.left_margin),
+                    (None, Some(m)) => coords.get(m).map(|c| c.x).unwrap_or(options.left_margin),
+                    _ => options.left_margin,
+                };
+
+                for (j, sib_id) in sibs.iter().enumerate() {
+                    let offset = (j as f64 - (k - 1.0) / 2.0) * options.x_spacing;
+                    target_xs.insert(sib_id.clone(), p_mid + offset);
+                }
+            }
+
+            // Para cônjuges ou fundadores sem pais
+            for (i, id) in ordered_ids.iter().enumerate() {
+                if !target_xs.contains_key(id) {
+                    let mut found_spouse_x = None;
+                    for spouse in ped.spouses(id) {
+                        if let Some(&sx) = target_xs.get(spouse) {
+                            let s_idx = ordered_ids.iter().position(|x| x == spouse).unwrap_or(i);
+                            if i < s_idx {
+                                found_spouse_x = Some(sx - options.x_spacing);
+                            } else {
+                                found_spouse_x = Some(sx + options.x_spacing);
+                            }
+                            break;
+                        }
+                    }
+                    let tx = found_spouse_x
+                        .unwrap_or(options.left_margin + (i as f64) * options.x_spacing);
+                    target_xs.insert(id.clone(), tx);
+                }
+            }
+
+            // Alinha da esquerda para a direita garantindo x_{i} >= x_{i-1} + x_spacing
+            let mut curr_x = f64::NEG_INFINITY;
+            for id in &ordered_ids {
+                let ideal_x = target_xs[id];
+                let actual_x = if curr_x.is_infinite() {
+                    ideal_x
+                } else {
+                    ideal_x.max(curr_x + options.x_spacing)
+                };
+                curr_x = actual_x;
                 coords.insert(
                     id.clone(),
                     NodeCoord {
                         id: id.clone(),
-                        x,
+                        x: actual_x,
                         y,
                         generation: *gen,
                     },
                 );
             }
+
+            gen_ordered_ids.insert(*gen, ordered_ids);
         }
+
+        // Pass 2: Bottom-Up Centering (centraliza pais sobre o centro de seus filhos)
+        for gen in (1..max_gen).rev() {
+            if let Some(ids) = gen_ordered_ids.get(&gen) {
+                let mut target_xs: HashMap<String, f64> = HashMap::new();
+
+                let mut seen_pairs = std::collections::HashSet::new();
+                for id in ids {
+                    for spouse in ped.spouses(id) {
+                        let key = if id.as_str() < spouse {
+                            format!("{}:{}", id, spouse)
+                        } else {
+                            format!("{}:{}", spouse, id)
+                        };
+                        if seen_pairs.insert(key) {
+                            let children: Vec<String> = ped
+                                .children(id)
+                                .into_iter()
+                                .filter(|&c| {
+                                    let ind = &ped.members[c];
+                                    (ind.fid.as_deref() == Some(id)
+                                        && ind.mid.as_deref() == Some(spouse))
+                                        || (ind.fid.as_deref() == Some(spouse)
+                                            && ind.mid.as_deref() == Some(id))
+                                })
+                                .map(|s| s.to_string())
+                                .collect();
+
+                            let child_xs: Vec<f64> = children
+                                .iter()
+                                .filter_map(|cid| coords.get(cid).map(|c| c.x))
+                                .collect();
+
+                            if !child_xs.is_empty() {
+                                let min_c = child_xs.iter().copied().fold(f64::INFINITY, f64::min);
+                                let max_c =
+                                    child_xs.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+                                let children_mid = (min_c + max_c) / 2.0;
+
+                                let idx_id = ids.iter().position(|x| x == id).unwrap_or(0);
+                                let idx_sp = ids.iter().position(|x| x == spouse).unwrap_or(1);
+                                if idx_id < idx_sp {
+                                    target_xs
+                                        .insert(id.clone(), children_mid - options.x_spacing / 2.0);
+                                    target_xs.insert(
+                                        spouse.to_string(),
+                                        children_mid + options.x_spacing / 2.0,
+                                    );
+                                } else {
+                                    target_xs.insert(
+                                        spouse.to_string(),
+                                        children_mid - options.x_spacing / 2.0,
+                                    );
+                                    target_xs
+                                        .insert(id.clone(), children_mid + options.x_spacing / 2.0);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if !target_xs.is_empty() {
+                    let mut curr_x = f64::NEG_INFINITY;
+                    for id in ids {
+                        let ideal_x = target_xs.get(id).copied().unwrap_or_else(|| coords[id].x);
+                        let actual_x = if curr_x.is_infinite() {
+                            ideal_x
+                        } else {
+                            ideal_x.max(curr_x + options.x_spacing)
+                        };
+                        curr_x = actual_x;
+                        if let Some(nc) = coords.get_mut(id) {
+                            nc.x = actual_x;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Pass 3: Global Left Margin Normalization
+        let min_x = coords.values().map(|c| c.x).fold(f64::INFINITY, f64::min);
+        let shift = if min_x < options.left_margin {
+            options.left_margin - min_x
+        } else {
+            0.0
+        };
+
+        if shift > 0.0 {
+            for c in coords.values_mut() {
+                c.x += shift;
+            }
+        }
+
+        let max_x = coords.values().map(|c| c.x).fold(100.0, f64::max);
 
         // 4. Identifica e constrói linhas de união e consanguinidade
         let mut unions = Vec::new();
@@ -293,4 +459,46 @@ fn order_generation_members(ped: &Ped, ids: &[String]) -> Vec<String> {
     }
 
     ordered
+}
+
+fn sort_by_parent_position(
+    ped: &Ped,
+    ids: &[String],
+    coords: &HashMap<String, NodeCoord>,
+) -> Vec<String> {
+    let mut with_pos: Vec<(f64, String)> = ids
+        .iter()
+        .map(|id| {
+            let ind = &ped.members[id];
+            let p_pos = match (&ind.fid, &ind.mid) {
+                (Some(f), Some(m)) => match (coords.get(f), coords.get(m)) {
+                    (Some(cf), Some(cm)) => (cf.x + cm.x) / 2.0,
+                    (Some(cf), None) => cf.x,
+                    (None, Some(cm)) => cm.x,
+                    _ => f64::INFINITY,
+                },
+                (Some(f), None) => coords.get(f).map(|c| c.x).unwrap_or(f64::INFINITY),
+                (None, Some(m)) => coords.get(m).map(|c| c.x).unwrap_or(f64::INFINITY),
+                _ => f64::INFINITY,
+            };
+            (p_pos, id.clone())
+        })
+        .collect();
+
+    for i in 0..with_pos.len() {
+        if with_pos[i].0.is_infinite() {
+            let id = &with_pos[i].1;
+            for spouse in ped.spouses(id) {
+                if let Some(sp_entry) = with_pos.iter().find(|(_, sid)| sid == spouse) {
+                    if !sp_entry.0.is_infinite() {
+                        with_pos[i].0 = sp_entry.0 + 0.1;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    with_pos.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+    with_pos.into_iter().map(|(_, id)| id).collect()
 }

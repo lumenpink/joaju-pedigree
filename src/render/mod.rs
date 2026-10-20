@@ -190,11 +190,13 @@ pub fn render_svg(ped: &Ped, layout: &PedLayout, options: &RenderOptions) -> Str
                 let min_c = child_xs.iter().copied().fold(f64::INFINITY, f64::min);
                 let max_c = child_xs.iter().copied().fold(f64::NEG_INFINITY, f64::max);
 
-                // Barra horizontal de irmãos
-                if min_c < max_c {
+                // Barra horizontal de irmaos conectando tambem com o stem da uniao parental
+                let bar_start = min_c.min(mid_x);
+                let bar_end = max_c.max(mid_x);
+                if bar_start < bar_end {
                     svg.push_str(&format!(
                         "  <line class=\"kin-line\" x1=\"{:.1}\" y1=\"{:.1}\" x2=\"{:.1}\" y2=\"{:.1}\" />\n",
-                        min_c, sib_bar_y, max_c, sib_bar_y
+                        bar_start, sib_bar_y, bar_end, sib_bar_y
                     ));
                 }
 
