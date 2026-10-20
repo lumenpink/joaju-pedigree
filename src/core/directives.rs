@@ -70,7 +70,7 @@ pub fn extract_directives(text: &str) -> (PedDirectives, String) {
         let trimmed = line.trim();
         if trimmed.starts_with("%%") {
             let directive_body = trimmed.trim_start_matches('%').trim();
-            if let Some((key, val)) = parse_key_value(directive_body) {
+            for (key, val) in parse_directives_line(directive_body) {
                 let lower_key = key.to_lowercase();
                 if lower_key == "legend" {
                     if val.eq_ignore_ascii_case("auto") || val.eq_ignore_ascii_case("true") {
@@ -160,14 +160,79 @@ pub fn extract_directives(text: &str) -> (PedDirectives, String) {
     (directives, clean_lines.join("\n"))
 }
 
-fn parse_key_value(s: &str) -> Option<(String, String)> {
-    if let Some(pos) = s.find('=') {
-        let k = s[..pos].trim().to_string();
-        let v = s[pos + 1..].trim().to_string();
-        Some((k, v))
-    } else {
-        None
+pub fn parse_directives_line(s: &str) -> Vec<(String, String)> {
+    let mut pairs = Vec::new();
+    let chars: Vec<char> = s.chars().collect();
+    let mut i = 0;
+    let n = chars.len();
+
+    while i < n {
+        while i < n && chars[i].is_whitespace() {
+            i += 1;
+        }
+        if i >= n {
+            break;
+        }
+
+        let key_start = i;
+        while i < n && chars[i] != '=' && !chars[i].is_whitespace() {
+            i += 1;
+        }
+        let key = chars[key_start..i].iter().collect::<String>();
+
+        while i < n && chars[i].is_whitespace() {
+            i += 1;
+        }
+        if i >= n || chars[i] != '=' {
+            if !key.is_empty() {
+                pairs.push((key, String::new()));
+            }
+            continue;
+        }
+        i += 1; // skip '='
+
+        while i < n && chars[i].is_whitespace() {
+            i += 1;
+        }
+        if i >= n {
+            pairs.push((key, String::new()));
+            break;
+        }
+
+        let val_start = i;
+        if chars[i] == '"' || chars[i] == '\'' {
+            let quote = chars[i];
+            i += 1;
+            while i < n && chars[i] != quote {
+                i += 1;
+            }
+            if i < n {
+                i += 1;
+            }
+        } else if i + 1 < n && chars[i] == 'c' && chars[i + 1] == '(' {
+            let mut depth = 0;
+            while i < n {
+                if chars[i] == '(' {
+                    depth += 1;
+                } else if chars[i] == ')' {
+                    depth -= 1;
+                    if depth == 0 {
+                        i += 1;
+                        break;
+                    }
+                }
+                i += 1;
+            }
+        } else {
+            while i < n && !chars[i].is_whitespace() {
+                i += 1;
+            }
+        }
+        let val = chars[val_start..i].iter().collect::<String>();
+        pairs.push((key, val));
     }
+
+    pairs
 }
 
 fn parse_c_vector(val: &str) -> Vec<String> {

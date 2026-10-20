@@ -113,6 +113,19 @@ fn test_spec_legend_auto_directive() {
 }
 
 #[test]
+fn test_spec_multiple_directives_single_line() {
+    let block = "%% legend=c(\"A\", \"B\") legend.type=c(\"empty_m\", \"empty_f\") cex=0.8\n\
+                 id,pai,mae,sex\n\
+                 1,0,0,1\n\
+                 2,0,0,2\n";
+    let (_, directives) = Ped::from_text(block).expect("Parse multi directives");
+    assert!(directives.has_legend());
+    assert_eq!(directives.legend_labels.as_ref().unwrap().len(), 2);
+    assert_eq!(directives.legend_types.as_ref().unwrap().len(), 2);
+    assert_eq!(directives.raw.get("cex").map(|s| s.as_str()), Some("0.8"));
+}
+
+#[test]
 fn test_mutation_mixed_case_headers_and_quotes() {
     let block = "%% legend = c('Patriarca', 'Matriarca')\n\
                  %% legend.type = c('empty_m', 'empty_f')\n\
