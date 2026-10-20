@@ -551,7 +551,7 @@ impl PedLayout {
             }
         }
 
-        let height = options.top_margin + (max_gen as f64) * options.y_spacing + 175.0;
+        let height = options.top_margin + (max_gen as f64) * options.y_spacing + 180.0;
 
         Self {
             coords,

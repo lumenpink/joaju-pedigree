@@ -379,7 +379,8 @@ fn test_spec_legend_card_multi_row_no_text_overlap() {
     );
     // O card de 6 itens deve ter altura expandida para 2 linhas (card_h >= 120)
     assert!(
-        svg.contains("height=\"135.0\"")
+        svg.contains("height=\"142.0\"")
+            || svg.contains("height=\"135.0\"")
             || svg.contains("height=\"130.0\"")
             || svg.contains("height=\"120.0\"")
     );

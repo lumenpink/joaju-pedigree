@@ -516,9 +516,14 @@ fn split_legend_label(label: &str) -> (String, Option<String>) {
 fn render_legend_label(svg: &mut String, ix: f64, base_y: f64, label: &str) {
     let (l1, l2) = split_legend_label(label);
     if let Some(second) = l2 {
+        let extra = if second.starts_with('(') {
+            " font-size=\"9.5\""
+        } else {
+            ""
+        };
         svg.push_str(&format!(
-            "    <text class=\"legend-lbl\" x=\"{:.1}\" y=\"{:.1}\"><tspan x=\"{:.1}\" dy=\"0\">{}</tspan><tspan x=\"{:.1}\" dy=\"12\">{}</tspan></text>\n",
-            ix, base_y - 4.0, ix, l1, ix, second
+            "    <text class=\"legend-lbl\" x=\"{:.1}\" y=\"{:.1}\"><tspan x=\"{:.1}\" dy=\"0\">{}</tspan><tspan x=\"{:.1}\" dy=\"12\"{}>{}</tspan></text>\n",
+            ix, base_y - 4.0, ix, l1, ix, extra, second
         ));
     } else {
         svg.push_str(&format!(
@@ -626,16 +631,16 @@ fn render_legend_symbol(svg: &mut String, ix: f64, iy: f64, sym: LegendSymbolTyp
         }
         LegendSymbolType::Proband | LegendSymbolType::ProbandM => {
             let sq_x = ix + 6.0;
-            let sq_y = iy;
+            let sq_y = iy - 6.0;
             svg.push_str(&format!(
                 "    <rect class=\"sym\" x=\"{:.1}\" y=\"{:.1}\" width=\"16\" height=\"16\" />\n",
                 sq_x - 8.0,
                 sq_y - 8.0
             ));
-            let arr_target_x = sq_x - 9.0;
-            let arr_target_y = sq_y + 7.0;
+            let arr_target_x = sq_x - 8.0;
+            let arr_target_y = sq_y + 6.0;
             let arr_orig_x = arr_target_x - 9.0;
-            let arr_orig_y = arr_target_y + 9.0;
+            let arr_orig_y = arr_target_y + 8.0;
             svg.push_str(&format!(
                 "    <path class=\"proband-arrow\" d=\"M {:.1} {:.1} L {:.1} {:.1} M {:.1} {:.1} L {:.1} {:.1} M {:.1} {:.1} L {:.1} {:.1}\" />\n",
                 arr_orig_x, arr_orig_y, arr_target_x, arr_target_y,
@@ -644,20 +649,20 @@ fn render_legend_symbol(svg: &mut String, ix: f64, iy: f64, sym: LegendSymbolTyp
             ));
             svg.push_str(&format!(
                 "    <text class=\"proband-lbl\" font-size=\"10\" font-weight=\"bold\" text-anchor=\"middle\" x=\"{:.1}\" y=\"{:.1}\">P</text>\n",
-                arr_orig_x - 6.0, arr_orig_y + 2.0
+                arr_orig_x - 6.0, arr_orig_y + 1.0
             ));
         }
         LegendSymbolType::ProbandF => {
             let circ_x = ix + 6.0;
-            let circ_y = iy;
+            let circ_y = iy - 6.0;
             svg.push_str(&format!(
                 "    <circle class=\"sym\" cx=\"{:.1}\" cy=\"{:.1}\" r=\"8\" />\n",
                 circ_x, circ_y
             ));
-            let arr_target_x = circ_x - 8.0;
-            let arr_target_y = circ_y + 6.0;
+            let arr_target_x = circ_x - 6.0;
+            let arr_target_y = circ_y + 5.0;
             let arr_orig_x = arr_target_x - 9.0;
-            let arr_orig_y = arr_target_y + 9.0;
+            let arr_orig_y = arr_target_y + 8.0;
             svg.push_str(&format!(
                 "    <path class=\"proband-arrow\" d=\"M {:.1} {:.1} L {:.1} {:.1} M {:.1} {:.1} L {:.1} {:.1} M {:.1} {:.1} L {:.1} {:.1}\" />\n",
                 arr_orig_x, arr_orig_y, arr_target_x, arr_target_y,
@@ -666,7 +671,7 @@ fn render_legend_symbol(svg: &mut String, ix: f64, iy: f64, sym: LegendSymbolTyp
             ));
             svg.push_str(&format!(
                 "    <text class=\"proband-lbl\" font-size=\"10\" font-weight=\"bold\" text-anchor=\"middle\" x=\"{:.1}\" y=\"{:.1}\">P</text>\n",
-                arr_orig_x - 6.0, arr_orig_y + 2.0
+                arr_orig_x - 6.0, arr_orig_y + 1.0
             ));
         }
     }
@@ -904,7 +909,7 @@ fn render_legend_card(
 
     let card_w = (width - 40.0).max(380.0);
     let is_two_rows = items.len() > 4;
-    let card_h = if is_two_rows { 135.0 } else { 82.0 };
+    let card_h = if is_two_rows { 142.0 } else { 82.0 };
     let card_x = (width - card_w) / 2.0;
     let card_y = height - card_h - 15.0;
 
@@ -931,9 +936,19 @@ fn render_legend_card(
         let cell_w = card_w / (items.len() as f64);
         for (i, item) in items.iter().enumerate() {
             let ix = card_x + (i as f64 + 0.5) * cell_w;
-            let iy = card_y + 44.0;
-            render_legend_symbol(svg, ix, iy, item.symbol);
-            render_legend_label(svg, ix, card_y + 65.0, &item.label);
+            let iy = card_y + 38.0;
+            let sym = if (item.symbol == LegendSymbolType::Proband
+                || item.symbol == LegendSymbolType::ProbandM)
+                && (item.label.to_lowercase().contains("probanda")
+                    || item.label.contains("(F)")
+                    || item.label.to_lowercase().contains("feminino"))
+            {
+                LegendSymbolType::ProbandF
+            } else {
+                item.symbol
+            };
+            render_legend_symbol(svg, ix, iy, sym);
+            render_legend_label(svg, ix, card_y + 64.0, &item.label);
         }
     } else {
         let split_idx = items.len().div_ceil(2);
@@ -943,17 +958,37 @@ fn render_legend_card(
         let cell_w0 = card_w / (row0.len() as f64);
         for (i, item) in row0.iter().enumerate() {
             let ix = card_x + (i as f64 + 0.5) * cell_w0;
-            let iy = card_y + 42.0;
-            render_legend_symbol(svg, ix, iy, item.symbol);
+            let iy = card_y + 38.0;
+            let sym = if (item.symbol == LegendSymbolType::Proband
+                || item.symbol == LegendSymbolType::ProbandM)
+                && (item.label.to_lowercase().contains("probanda")
+                    || item.label.contains("(F)")
+                    || item.label.to_lowercase().contains("feminino"))
+            {
+                LegendSymbolType::ProbandF
+            } else {
+                item.symbol
+            };
+            render_legend_symbol(svg, ix, iy, sym);
             render_legend_label(svg, ix, card_y + 64.0, &item.label);
         }
 
         let cell_w1 = card_w / (row1.len() as f64);
         for (i, item) in row1.iter().enumerate() {
             let ix = card_x + (i as f64 + 0.5) * cell_w1;
-            let iy = card_y + 96.0;
-            render_legend_symbol(svg, ix, iy, item.symbol);
-            render_legend_label(svg, ix, card_y + 118.0, &item.label);
+            let iy = card_y + 95.0;
+            let sym = if (item.symbol == LegendSymbolType::Proband
+                || item.symbol == LegendSymbolType::ProbandM)
+                && (item.label.to_lowercase().contains("probanda")
+                    || item.label.contains("(F)")
+                    || item.label.to_lowercase().contains("feminino"))
+            {
+                LegendSymbolType::ProbandF
+            } else {
+                item.symbol
+            };
+            render_legend_symbol(svg, ix, iy, sym);
+            render_legend_label(svg, ix, card_y + 122.0, &item.label);
         }
     }
 
