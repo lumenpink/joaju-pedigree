@@ -35,12 +35,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (ped, directives) = Ped::from_text(&raw_content)?;
     let layout = ped.compute_layout(&LayoutOptions::default())?;
 
-    let mut render_opts = RenderOptions::default();
-    if directives.has_legend() {
-        render_opts.legend = Some(directives.to_legend_config());
-        render_opts.card_legend = true;
-    } else if cli.legend {
+    let mut render_opts = RenderOptions {
+        auto_legend_mode: directives.auto_legend_mode(),
+        ..Default::default()
+    };
+    if directives.is_auto_legend() || cli.legend {
         render_opts.auto_legend = true;
+        render_opts.card_legend = true;
+    } else if directives.has_legend() {
+        render_opts.legend = Some(directives.to_legend_config());
         render_opts.card_legend = true;
     }
 

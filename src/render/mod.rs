@@ -423,23 +423,34 @@ fn render_individual(svg: &mut String, ind: &Individual, x: f64, y: f64, show_id
         ));
     }
 
-    // Probando (Seta 45° no canto inferior esquerdo)
+    // Probando (Seta canônica a 45° no canto inferior esquerdo)
     if ind.proband {
-        let arr_target_x = x - 16.0;
-        let arr_target_y = y + 14.0;
-        let arr_orig_x = arr_target_x - 12.0;
-        let arr_orig_y = arr_target_y + 10.0;
+        let (arr_target_x, arr_target_y) = match ind.sex {
+            Sex::Male => (x - 16.0, y + 16.0),
+            Sex::Female => (x - 11.5, y + 11.5),
+            Sex::Unknown => (x - 13.0, y + 13.0),
+        };
+        let stem_len = 10.0;
+        let arr_orig_x = arr_target_x - stem_len;
+        let arr_orig_y = arr_target_y + stem_len;
+
+        // Barbas perfeitamente simétricas a 30° do eixo reverso (135°):
+        let barb_len = 5.8;
+        let b1_x = arr_target_x - barb_len * 0.9659;
+        let b1_y = arr_target_y + barb_len * 0.2588;
+        let b2_x = arr_target_x - barb_len * 0.2588;
+        let b2_y = arr_target_y + barb_len * 0.9659;
 
         svg.push_str(&format!(
             "  <!-- Probando Seta e Marcador P -->\n  <path class=\"proband-arrow\" d=\"M {:.1} {:.1} L {:.1} {:.1} M {:.1} {:.1} L {:.1} {:.1} M {:.1} {:.1} L {:.1} {:.1}\" />\n",
             arr_orig_x, arr_orig_y, arr_target_x, arr_target_y,
-            arr_target_x, arr_target_y, arr_target_x - 6.0, arr_target_y,
-            arr_target_x, arr_target_y, arr_target_x, arr_target_y + 6.0
+            arr_target_x, arr_target_y, b1_x, b1_y,
+            arr_target_x, arr_target_y, b2_x, b2_y
         ));
         svg.push_str(&format!(
-            "  <text class=\"proband-lbl\" x=\"{:.1}\" y=\"{:.1}\">P</text>\n",
-            arr_orig_x - 8.0,
-            arr_orig_y + 3.0
+            "  <text class=\"proband-lbl\" text-anchor=\"end\" x=\"{:.1}\" y=\"{:.1}\">P</text>\n",
+            arr_orig_x - 4.0,
+            arr_orig_y + 4.0
         ));
     }
 
@@ -630,48 +641,66 @@ fn render_legend_symbol(svg: &mut String, ix: f64, iy: f64, sym: LegendSymbolTyp
             ));
         }
         LegendSymbolType::Proband | LegendSymbolType::ProbandM => {
-            let sq_x = ix + 6.0;
-            let sq_y = iy - 6.0;
+            let sq_x = ix + 4.0;
+            let sq_y = iy - 4.0;
             svg.push_str(&format!(
                 "    <rect class=\"sym\" x=\"{:.1}\" y=\"{:.1}\" width=\"16\" height=\"16\" />\n",
                 sq_x - 8.0,
                 sq_y - 8.0
             ));
-            let arr_target_x = sq_x - 8.0;
-            let arr_target_y = sq_y + 6.0;
-            let arr_orig_x = arr_target_x - 9.0;
-            let arr_orig_y = arr_target_y + 8.0;
+            // Canto inferior esquerdo com gap de 1.5px:
+            let arr_target_x = sq_x - 9.5;
+            let arr_target_y = sq_y + 9.5;
+            let stem_len = 7.0;
+            let arr_orig_x = arr_target_x - stem_len;
+            let arr_orig_y = arr_target_y + stem_len;
+
+            let barb_len = 4.2;
+            let b1_x = arr_target_x - barb_len * 0.9659;
+            let b1_y = arr_target_y + barb_len * 0.2588;
+            let b2_x = arr_target_x - barb_len * 0.2588;
+            let b2_y = arr_target_y + barb_len * 0.9659;
+
             svg.push_str(&format!(
                 "    <path class=\"proband-arrow\" d=\"M {:.1} {:.1} L {:.1} {:.1} M {:.1} {:.1} L {:.1} {:.1} M {:.1} {:.1} L {:.1} {:.1}\" />\n",
                 arr_orig_x, arr_orig_y, arr_target_x, arr_target_y,
-                arr_target_x, arr_target_y, arr_target_x - 5.0, arr_target_y,
-                arr_target_x, arr_target_y, arr_target_x, arr_target_y + 5.0
+                arr_target_x, arr_target_y, b1_x, b1_y,
+                arr_target_x, arr_target_y, b2_x, b2_y
             ));
             svg.push_str(&format!(
-                "    <text class=\"proband-lbl\" font-size=\"10\" font-weight=\"bold\" text-anchor=\"middle\" x=\"{:.1}\" y=\"{:.1}\">P</text>\n",
-                arr_orig_x - 6.0, arr_orig_y + 1.0
+                "    <text class=\"proband-lbl\" font-size=\"9\" font-weight=\"bold\" text-anchor=\"end\" x=\"{:.1}\" y=\"{:.1}\">P</text>\n",
+                arr_orig_x - 3.0, arr_orig_y + 3.0
             ));
         }
         LegendSymbolType::ProbandF => {
-            let circ_x = ix + 6.0;
-            let circ_y = iy - 6.0;
+            let circ_x = ix + 4.0;
+            let circ_y = iy - 4.0;
             svg.push_str(&format!(
                 "    <circle class=\"sym\" cx=\"{:.1}\" cy=\"{:.1}\" r=\"8\" />\n",
                 circ_x, circ_y
             ));
-            let arr_target_x = circ_x - 6.0;
-            let arr_target_y = circ_y + 5.0;
-            let arr_orig_x = arr_target_x - 9.0;
-            let arr_orig_y = arr_target_y + 8.0;
+            // Perímetro inferior esquerdo a 225° com gap de 1.5px:
+            let arr_target_x = circ_x - 7.2;
+            let arr_target_y = circ_y + 7.2;
+            let stem_len = 7.0;
+            let arr_orig_x = arr_target_x - stem_len;
+            let arr_orig_y = arr_target_y + stem_len;
+
+            let barb_len = 4.2;
+            let b1_x = arr_target_x - barb_len * 0.9659;
+            let b1_y = arr_target_y + barb_len * 0.2588;
+            let b2_x = arr_target_x - barb_len * 0.2588;
+            let b2_y = arr_target_y + barb_len * 0.9659;
+
             svg.push_str(&format!(
                 "    <path class=\"proband-arrow\" d=\"M {:.1} {:.1} L {:.1} {:.1} M {:.1} {:.1} L {:.1} {:.1} M {:.1} {:.1} L {:.1} {:.1}\" />\n",
                 arr_orig_x, arr_orig_y, arr_target_x, arr_target_y,
-                arr_target_x, arr_target_y, arr_target_x - 5.0, arr_target_y,
-                arr_target_x, arr_target_y, arr_target_x, arr_target_y + 5.0
+                arr_target_x, arr_target_y, b1_x, b1_y,
+                arr_target_x, arr_target_y, b2_x, b2_y
             ));
             svg.push_str(&format!(
-                "    <text class=\"proband-lbl\" font-size=\"10\" font-weight=\"bold\" text-anchor=\"middle\" x=\"{:.1}\" y=\"{:.1}\">P</text>\n",
-                arr_orig_x - 6.0, arr_orig_y + 1.0
+                "    <text class=\"proband-lbl\" font-size=\"9\" font-weight=\"bold\" text-anchor=\"end\" x=\"{:.1}\" y=\"{:.1}\">P</text>\n",
+                arr_orig_x - 3.0, arr_orig_y + 3.0
             ));
         }
     }
@@ -809,7 +838,9 @@ fn render_legend_card(
             });
         }
         auto_items
-    } else if options.auto_legend || options.auto_legend_mode == AutoLegendMode::Generic {
+    } else {
+        // Modo Genérico (padrão quando auto_legend=true ou card_legend=true)
+        // Sintetiza estritamente os traços presentes na família (sem traços ausentes como "Falecido"!)
         let mut auto_items = Vec::new();
         let has_male = ped.members.values().any(|i| i.sex == Sex::Male);
         let has_female = ped.members.values().any(|i| i.sex == Sex::Female);
@@ -874,33 +905,6 @@ fn render_legend_card(
             });
         }
         auto_items
-    } else {
-        vec![
-            LegendItem {
-                symbol: LegendSymbolType::EmptyM,
-                label: "Sexo masculino".into(),
-            },
-            LegendItem {
-                symbol: LegendSymbolType::EmptyF,
-                label: "Sexo feminino".into(),
-            },
-            LegendItem {
-                symbol: LegendSymbolType::SqSolid,
-                label: "Afetado".into(),
-            },
-            LegendItem {
-                symbol: LegendSymbolType::CircHalf,
-                label: "Portador".into(),
-            },
-            LegendItem {
-                symbol: LegendSymbolType::Deceased,
-                label: "Falecido".into(),
-            },
-            LegendItem {
-                symbol: LegendSymbolType::Proband,
-                label: "Probando".into(),
-            },
-        ]
     };
 
     if items.is_empty() {
@@ -939,8 +943,7 @@ fn render_legend_card(
                 Some(Sex::Female) => LegendSymbolType::ProbandF,
                 Some(Sex::Male) => LegendSymbolType::ProbandM,
                 _ => {
-                    if item.label.to_lowercase().contains("feminino")
-                        || item.label.contains("(F)")
+                    if item.label.to_lowercase().contains("feminino") || item.label.contains("(F)")
                     {
                         LegendSymbolType::ProbandF
                     } else {
