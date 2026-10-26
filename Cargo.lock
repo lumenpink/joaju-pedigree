@@ -177,7 +177,7 @@ checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 [[package]]
 name = "joaju-csv"
 version = "0.1.0"
-source = "sparse+https://git.2lp.in/api/packages/lumen/cargo/"
+source = "sparse+https://gambi.2lp.in/api/packages/lumen/cargo/"
 checksum = "2bc2ff7c850e32e295f4e9040f7b4a0534cbf7983b0144a2d208ec64aec9919d"
 dependencies = [
  "clap",
@@ -190,12 +190,13 @@ dependencies = [
 
 [[package]]
 name = "joaju-pedigree"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "clap",
  "csv",
  "joaju-csv",
  "petgraph",
+ "regex",
  "serde",
  "serde_json",
  "thiserror",

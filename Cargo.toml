@@ -1,6 +1,6 @@
 [package]
 name = "joaju-pedigree"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 description = "A high-performance Rust library for pedigree modeling, kinship calculation, and clinical pedigree rendering conforming to NSGC/ACMG guidelines (pedtools/R parity)"
 license = "Apache-2.0"
@@ -13,11 +13,12 @@ categories = ["science", "data-structures", "command-line-utilities"]
 authors = ["Lumen Pink <hi@lumen.pink>"]
 
 [dependencies]
-joaju-csv = { version = "0.1.0", registry = "lumen" }
+joaju-csv = { version = "0.1.0", registry = "gambi" }
 petgraph = "0.7"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 csv = "1.3"
+regex = "1"
 thiserror = "2.0"
 clap = { version = "4.5", features = ["derive"], optional = true }
 
@@ -35,3 +36,4 @@ required-features = ["cli"]
 [lib]
 name = "joaju_pedigree"
 path = "src/lib.rs"
+crate-type = ["rlib", "staticlib"]

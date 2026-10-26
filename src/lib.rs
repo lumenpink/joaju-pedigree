@@ -19,6 +19,7 @@
 //! assert!((kin.get("1", "3").unwrap() - 0.25).abs() < 1e-6);
 //! ```
 
+pub mod block;
 pub mod core;
 pub mod genetics;
 pub mod graph;
@@ -26,6 +27,8 @@ pub mod kinship;
 pub mod layout;
 pub mod prelude;
 pub mod render;
+
+pub use crate::block::{render_pedigree, RenderErrorResponse, RenderRequest, RenderResponse};
 
 pub use crate::core::{
     AdoptionType, ChildlessType, Individual, Ped, PregnancyLossType, Sex, Status, TwinType,
