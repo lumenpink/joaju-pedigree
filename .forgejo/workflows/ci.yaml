@@ -33,14 +33,13 @@ jobs:
           rustup component add rustfmt clippy 2>/dev/null || true
 
       - name: "Configure Sovereign Cargo Registries"
+        env:
+          TOKEN: ${{ secrets.REGISTRY_TOKEN || secrets.GAMBI_2LP_IN_TOKEN || secrets.FORGEJO_TOKEN }}
         run: |
           mkdir -p "$HOME/.cargo"
           printf '[registries.gambi]\nindex = "sparse+https://gambi.2lp.in/api/packages/lumen/cargo/"\n' > "$HOME/.cargo/config.toml"
-          printf '[registries.lumen]\nindex = "sparse+https://gambi.2lp.in/api/packages/lumen/cargo/"\n' >> "$HOME/.cargo/config.toml"
-          TOKEN="${{ secrets.FORGEJO_TOKEN }}"
-          [ -z "$TOKEN" ] && TOKEN="${{ secrets.LUMEN_REGISTRY_TOKEN }}"
           if [ -n "$TOKEN" ]; then
-            printf '[registries.gambi]\ntoken = "%s"\n[registries.lumen]\ntoken = "%s"\n' "$TOKEN" "$TOKEN" > "$HOME/.cargo/credentials.toml"
+            printf '[registries.gambi]\ntoken = "%s"\n' "$TOKEN" > "$HOME/.cargo/credentials.toml"
           fi
 
       - name: "GitOps — Update Sovereign Satellite Dependencies"
@@ -91,16 +90,15 @@ jobs:
 
       - name: "Configure Sovereign Cargo Credentials"
         env:
-          FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
-          LUMEN_TOKEN: ${{ secrets.LUMEN_REGISTRY_TOKEN }}
+          TOKEN: ${{ secrets.REGISTRY_TOKEN || secrets.GAMBI_2LP_IN_TOKEN || secrets.FORGEJO_TOKEN }}
         run: |
           mkdir -p "$HOME/.cargo"
           printf '[registries.gambi]\nindex = "sparse+https://gambi.2lp.in/api/packages/lumen/cargo/"\n' > "$HOME/.cargo/config.toml"
-          printf '[registries.lumen]\nindex = "sparse+https://gambi.2lp.in/api/packages/lumen/cargo/"\n' >> "$HOME/.cargo/config.toml"
-          TOKEN="${FORGEJO_TOKEN:-$LUMEN_TOKEN}"
-          if [ -n "$TOKEN" ]; then
-            printf '[registries.gambi]\ntoken = "%s"\n[registries.lumen]\ntoken = "%s"\n' "$TOKEN" "$TOKEN" > "$HOME/.cargo/credentials.toml"
+          if [ -z "$TOKEN" ]; then
+            echo "::error::Nenhum token soberano configurado (REGISTRY_TOKEN / GAMBI_2LP_IN_TOKEN)."
+            exit 1
           fi
+          printf '[registries.gambi]\ntoken = "%s"\n' "$TOKEN" > "$HOME/.cargo/credentials.toml"
 
       - name: "Publish Crate to Sovereign Cargo Registry"
         run: |
@@ -108,12 +106,16 @@ jobs:
           echo "-> Sincronizando Cargo.toml para a versao canonica: $CANONICAL_VERSION"
           sed -i "0,/^version = .*/s//version = \"${CANONICAL_VERSION}\"/" Cargo.toml
           echo "-> Publicando joaju-pedigree no registry gambi..."
-          cargo publish --registry gambi --allow-dirty || cargo publish --registry lumen --allow-dirty || echo "::warning::Versao ja publicada ou falha tolerada no registry."
+          cargo publish --registry gambi --allow-dirty
 
       - name: "Build Multiarch Staticlibs & Publish to Generic Packages"
         env:
-          FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
+          TOKEN: ${{ secrets.REGISTRY_TOKEN || secrets.GAMBI_2LP_IN_TOKEN || secrets.FORGEJO_TOKEN }}
         run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::error::Token soberano ausente para publicacao de Generic Packages!"
+            exit 1
+          fi
           VERSION=$(head -n 1 VERSION | cut -d'+' -f1 | tr -d ' \r\n')
           TARGETS=(
             "x86_64-unknown-linux-musl:libjoaju_pedigree-x86_64-linux.a"
@@ -124,27 +126,21 @@ jobs:
           for ENTRY in "${TARGETS[@]}"; do
             IFS=":" read -r TARGET DEST_NAME <<< "$ENTRY"
             echo "★ Compilando staticlib para $TARGET..."
-            cargo zigbuild --release --target "$TARGET" || cargo build --release --target "$TARGET" || true
+            cargo zigbuild --release --target "$TARGET" || cargo build --release --target "$TARGET"
 
             SRC_PATH="target/${TARGET}/release/libjoaju_pedigree.a"
-            if [ -n "$FORGEJO_TOKEN" ] && [ -f "$SRC_PATH" ]; then
+            if [ -f "$SRC_PATH" ]; then
               echo "-> Enviando $DEST_NAME para Generic Packages ($VERSION)..."
               curl -s -f --http1.1 --retry 3 -X PUT \
-                -H "Authorization: token $FORGEJO_TOKEN" \
+                -H "Authorization: token $TOKEN" \
                 -T "$SRC_PATH" \
                 "https://gambi.2lp.in/api/packages/lumen/generic/joaju-pedigree-static/${VERSION}/${DEST_NAME}"
-              echo "✔ $DEST_NAME publicado."
+              echo "✔ $DEST_NAME publicado com sucesso."
+            else
+              echo "::error::Arquivo $SRC_PATH nao encontrado para publicacao!"
+              exit 1
             fi
           done
-
-          # Fallback nativo
-          cargo build --release || true
-          if [ -n "$FORGEJO_TOKEN" ] && [ -f "target/release/libjoaju_pedigree.a" ]; then
-            curl -s -f --http1.1 --retry 3 -X PUT \
-              -H "Authorization: token $FORGEJO_TOKEN" \
-              -T "target/release/libjoaju_pedigree.a" \
-              "https://gambi.2lp.in/api/packages/lumen/generic/joaju-pedigree-static/${VERSION}/libjoaju_pedigree-x86_64-linux.a" || true
-          fi
 
       - name: "GitOps Cascade — Dispatch Downstream joaju"
         env:
