@@ -104,6 +104,42 @@ jobs:
           echo "-> Publicando joaju-pedigree no registry lumen..."
           cargo publish --registry lumen --allow-dirty || echo "::warning::Versao ja publicada ou falha tolerada no registry."
 
+      - name: "Build Multiarch Staticlibs & Publish to Generic Packages"
+        env:
+          FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
+        run: |
+          VERSION=$(head -n 1 VERSION | cut -d'+' -f1 | tr -d ' \r\n')
+          TARGETS=(
+            "x86_64-unknown-linux-musl:libjoaju_pedigree-x86_64-linux.a"
+            "aarch64-unknown-linux-musl:libjoaju_pedigree-aarch64-linux.a"
+            "x86_64-pc-windows-gnu:libjoaju_pedigree-x86_64-windows.a"
+          )
+
+          for ENTRY in "${TARGETS[@]}"; do
+            IFS=":" read -r TARGET DEST_NAME <<< "$ENTRY"
+            echo "★ Compilando staticlib para $TARGET..."
+            cargo zigbuild --release --target "$TARGET" || cargo build --release --target "$TARGET" || true
+
+            SRC_PATH="target/${TARGET}/release/libjoaju_pedigree.a"
+            if [ -n "$FORGEJO_TOKEN" ] && [ -f "$SRC_PATH" ]; then
+              echo "-> Enviando $DEST_NAME para Generic Packages ($VERSION)..."
+              curl -s -X PUT \
+                -H "Authorization: token $FORGEJO_TOKEN" \
+                -T "$SRC_PATH" \
+                "https://gambi.2lp.in/api/packages/lumen/generic/joaju-pedigree-static/${VERSION}/${DEST_NAME}"
+              echo "✔ $DEST_NAME publicado."
+            fi
+          done
+
+          # Fallback nativo
+          cargo build --release || true
+          if [ -n "$FORGEJO_TOKEN" ] && [ -f "target/release/libjoaju_pedigree.a" ]; then
+            curl -s -X PUT \
+              -H "Authorization: token $FORGEJO_TOKEN" \
+              -T "target/release/libjoaju_pedigree.a" \
+              "https://gambi.2lp.in/api/packages/lumen/generic/joaju-pedigree-static/${VERSION}/libjoaju_pedigree-x86_64-linux.a" || true
+          fi
+
       - name: "GitOps Cascade — Dispatch Downstream joaju"
         env:
           CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
