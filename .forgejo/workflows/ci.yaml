@@ -32,24 +32,27 @@ jobs:
           fi
           rustup component add rustfmt clippy 2>/dev/null || true
 
-      - name: "Configure Sovereign Lumen Cargo Registry"
+      - name: "Configure Sovereign Cargo Registries"
         run: |
           mkdir -p "$HOME/.cargo"
-          printf '[registries.lumen]\nindex = "sparse+https://gambi.2lp.in/api/packages/lumen/cargo/"\n' > "$HOME/.cargo/config.toml"
-          if [ -n "${{ secrets.LUMEN_REGISTRY_TOKEN }}" ]; then
-            printf '[registries.lumen]\ntoken = "%s"\n' "${{ secrets.LUMEN_REGISTRY_TOKEN }}" > "$HOME/.cargo/credentials.toml"
+          printf '[registries.gambi]\nindex = "sparse+https://gambi.2lp.in/api/packages/lumen/cargo/"\n' > "$HOME/.cargo/config.toml"
+          printf '[registries.lumen]\nindex = "sparse+https://gambi.2lp.in/api/packages/lumen/cargo/"\n' >> "$HOME/.cargo/config.toml"
+          TOKEN="${{ secrets.FORGEJO_TOKEN }}"
+          [ -z "$TOKEN" ] && TOKEN="${{ secrets.LUMEN_REGISTRY_TOKEN }}"
+          if [ -n "$TOKEN" ]; then
+            printf '[registries.gambi]\ntoken = "%s"\n[registries.lumen]\ntoken = "%s"\n' "$TOKEN" "$TOKEN" > "$HOME/.cargo/credentials.toml"
           fi
 
       - name: "GitOps — Update Sovereign Satellite Dependencies"
         if: github.event_name == 'workflow_dispatch'
         run: |
-          echo "-> GitOps dispatch recebido: atualizando joaju-csv a partir do registry lumen..."
+          echo "-> GitOps dispatch recebido: atualizando joaju-csv a partir do registry gambi..."
           cargo update -p joaju-csv || cargo update
           if ! git diff --quiet Cargo.lock; then
             echo "-> Alteracoes detectadas em Cargo.lock. Commitando..."
             git config user.name "Lumen Pink (Baquara)"
             git config user.email "hi@lumen.pink"
-            git commit -m "chore(deps): atualizar joaju-csv do registry lumen [skip ci]"
+            git commit -m "chore(deps): atualizar joaju-csv do registry gambi [skip ci]"
             if [ -n "${{ secrets.CODEBERG_TOKEN }}" ]; then
               git push "https://x-access-token:${{ secrets.CODEBERG_TOKEN }}@codeberg.org/lumenpink/joaju-pedigree.git" main || true
             fi
@@ -58,7 +61,7 @@ jobs:
           fi
 
       - name: "Format Check"
-        run: cargo fmt -- --check
+        run: cargo fmt --check
 
       - name: "Clippy Check (Zero Warnings)"
         run: cargo clippy --all-targets -- -D warnings
@@ -86,23 +89,26 @@ jobs:
       - name: "Checkout repository"
         uses: actions/checkout@v4
 
-      - name: "Configure Sovereign Lumen Cargo Credentials"
+      - name: "Configure Sovereign Cargo Credentials"
         env:
+          FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
           LUMEN_TOKEN: ${{ secrets.LUMEN_REGISTRY_TOKEN }}
         run: |
           mkdir -p "$HOME/.cargo"
-          printf '[registries.lumen]\nindex = "sparse+https://gambi.2lp.in/api/packages/lumen/cargo/"\n' > "$HOME/.cargo/config.toml"
-          if [ -n "$LUMEN_TOKEN" ]; then
-            printf '[registries.lumen]\ntoken = "%s"\n' "$LUMEN_TOKEN" > "$HOME/.cargo/credentials.toml"
+          printf '[registries.gambi]\nindex = "sparse+https://gambi.2lp.in/api/packages/lumen/cargo/"\n' > "$HOME/.cargo/config.toml"
+          printf '[registries.lumen]\nindex = "sparse+https://gambi.2lp.in/api/packages/lumen/cargo/"\n' >> "$HOME/.cargo/config.toml"
+          TOKEN="${FORGEJO_TOKEN:-$LUMEN_TOKEN}"
+          if [ -n "$TOKEN" ]; then
+            printf '[registries.gambi]\ntoken = "%s"\n[registries.lumen]\ntoken = "%s"\n' "$TOKEN" "$TOKEN" > "$HOME/.cargo/credentials.toml"
           fi
 
-      - name: "Publish Crate to Sovereign Lumen Registry"
+      - name: "Publish Crate to Sovereign Cargo Registry"
         run: |
           CANONICAL_VERSION=$(head -n 1 VERSION | tr -d ' \r\n')
           echo "-> Sincronizando Cargo.toml para a versao canonica: $CANONICAL_VERSION"
           sed -i "0,/^version = .*/s//version = \"${CANONICAL_VERSION}\"/" Cargo.toml
-          echo "-> Publicando joaju-pedigree no registry lumen..."
-          cargo publish --registry lumen --allow-dirty || echo "::warning::Versao ja publicada ou falha tolerada no registry."
+          echo "-> Publicando joaju-pedigree no registry gambi..."
+          cargo publish --registry gambi --allow-dirty || cargo publish --registry lumen --allow-dirty || echo "::warning::Versao ja publicada ou falha tolerada no registry."
 
       - name: "Build Multiarch Staticlibs & Publish to Generic Packages"
         env:
@@ -123,7 +129,7 @@ jobs:
             SRC_PATH="target/${TARGET}/release/libjoaju_pedigree.a"
             if [ -n "$FORGEJO_TOKEN" ] && [ -f "$SRC_PATH" ]; then
               echo "-> Enviando $DEST_NAME para Generic Packages ($VERSION)..."
-              curl -s -X PUT \
+              curl -s -f --http1.1 --retry 3 -X PUT \
                 -H "Authorization: token $FORGEJO_TOKEN" \
                 -T "$SRC_PATH" \
                 "https://gambi.2lp.in/api/packages/lumen/generic/joaju-pedigree-static/${VERSION}/${DEST_NAME}"
@@ -134,7 +140,7 @@ jobs:
           # Fallback nativo
           cargo build --release || true
           if [ -n "$FORGEJO_TOKEN" ] && [ -f "target/release/libjoaju_pedigree.a" ]; then
-            curl -s -X PUT \
+            curl -s -f --http1.1 --retry 3 -X PUT \
               -H "Authorization: token $FORGEJO_TOKEN" \
               -T "target/release/libjoaju_pedigree.a" \
               "https://gambi.2lp.in/api/packages/lumen/generic/joaju-pedigree-static/${VERSION}/libjoaju_pedigree-x86_64-linux.a" || true
