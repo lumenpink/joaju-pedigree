@@ -1,6 +1,6 @@
 [package]
 name = "joaju-pedigree"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 description = "A high-performance Rust library for pedigree modeling, kinship calculation, and clinical pedigree rendering conforming to NSGC/ACMG guidelines (pedtools/R parity)"
 license = "Apache-2.0"
