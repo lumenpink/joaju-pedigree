@@ -21,6 +21,7 @@
 
 pub mod block;
 pub mod core;
+/// C-ABI Foreign Function Interface (FFI) for clinical pedigree rendering.
 pub mod ffi;
 pub mod genetics;
 pub mod graph;
