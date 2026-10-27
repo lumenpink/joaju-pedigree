@@ -41,8 +41,8 @@ if ! grep -q -E "sparse\+https://(gambi|git)\.2lp\.in/api/packages/lumen/cargo/"
   exit 1
 fi
 
-if ! grep -q "cargo publish --registry lumen" "$WORKFLOW"; then
-  echo "✘ [FALHA] $WORKFLOW nao publica no registry soberano lumen!"
+if ! grep -q -E "cargo publish --registry (lumen|gambi)" "$WORKFLOW"; then
+  echo "✘ [FALHA] $WORKFLOW nao publica no registry soberano (lumen/gambi)!"
   exit 1
 fi
 

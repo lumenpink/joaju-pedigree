@@ -106,7 +106,16 @@ jobs:
           echo "-> Sincronizando Cargo.toml para a versao canonica: $CANONICAL_VERSION"
           sed -i "0,/^version = .*/s//version = \"${CANONICAL_VERSION}\"/" Cargo.toml
           echo "-> Publicando joaju-pedigree no registry gambi..."
-          cargo publish --registry gambi --allow-dirty
+          PUBLISH_OUT=$(cargo publish --registry gambi --allow-dirty 2>&1) || {
+            STATUS=$?
+            if echo "$PUBLISH_OUT" | grep -q "already exists"; then
+              echo "::notice::Crate joaju-pedigree@${CANONICAL_VERSION} ja consta publicada no registry soberano."
+            else
+              echo "$PUBLISH_OUT" >&2
+              echo "::error::Falha critica na publicacao da crate no registry soberano!"
+              exit $STATUS
+            fi
+          }
 
       - name: "Build Multiarch Staticlibs & Publish to Generic Packages"
         env:
