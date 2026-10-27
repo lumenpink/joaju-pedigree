@@ -3,7 +3,7 @@ use std::ptr;
 
 #[test]
 fn test_ffi_pedigree_render_success() {
-    let input = CString::new("id,sex\n1,m\n2,f\n").unwrap();
+    let input = CString::new("id,pai,mae,sex\n1,0,0,1\n2,0,0,2\n3,1,2,1\n").unwrap();
     let mut out_fmt = ptr::null_mut();
     let mut out_svg = ptr::null_mut();
     let mut out_err = ptr::null_mut();
@@ -60,6 +60,29 @@ fn test_ffi_pedigree_render_empty_error() {
     let err_str = unsafe { CStr::from_ptr(out_err).to_str().unwrap() };
     assert!(!err_str.is_empty());
 
+    unsafe {
+        joaju_pedigree::ffi::joaju_pedigree_free_string(out_err);
+    }
+}
+
+#[test]
+fn test_ffi_pedigree_render_null_pointer() {
+    let mut out_fmt = ptr::null_mut();
+    let mut out_svg = ptr::null_mut();
+    let mut out_err = ptr::null_mut();
+
+    let rc = unsafe {
+        joaju_pedigree::ffi::joaju_pedigree_render(
+            ptr::null(),
+            ptr::null(),
+            &mut out_fmt,
+            &mut out_svg,
+            &mut out_err,
+        )
+    };
+
+    assert_eq!(rc, -1);
+    assert!(!out_err.is_null());
     unsafe {
         joaju_pedigree::ffi::joaju_pedigree_free_string(out_err);
     }

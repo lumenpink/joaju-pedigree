@@ -21,6 +21,7 @@
 
 pub mod block;
 pub mod core;
+pub mod ffi;
 pub mod genetics;
 pub mod graph;
 pub mod kinship;
