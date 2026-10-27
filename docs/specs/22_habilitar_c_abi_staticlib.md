@@ -1,7 +1,7 @@
 # Especificação 22: Habilitar C-ABI FFI e Esteira de Pacotes Estáticos
 
 - **ID do Ticket:** #22
-- **Status:** Em Progresso (DD-TDD)
+- **Status:** Concluído (DD-TDD) (closes #22)
 - **Autora:** Lumen
 - **Alinhamento:** GOST 1.1.0 (Rust)
 
@@ -40,9 +40,9 @@ A crate `joaju-pedigree` implementa modelagem de pedigrees clínicos e renderiza
 - [x] Fase 1 (Ticket): #22
 - [x] Fase 2 (Branch): `feat/22-habilitar-c-abi-staticlib`
 - [x] Fase 3 (Spec): Especificação técnica elaborada
-- [ ] Fase 4 (Red Test): Criar teste red para símbolos C-ABI (`tests/ffi_spec.rs`)
-- [ ] Fase 5 (Green Implement): Implementar módulo FFI (`src/ffi.rs`)
-- [ ] Fase 6 (Refactor): Limpeza de memória e testes para ponteiros nulos
-- [ ] Fase 7 (Mutation Test): Validação de mutação e resiliência em erros
-- [ ] Fase 8 (Quality Gate): fmt, clippy sem avisos e testes verdes (100% Gosplan)
-- [ ] Fase 9 (Finish & Close): Concluído e pronto para merge
+- [x] Fase 4 (Red Test): Criar teste red para símbolos C-ABI (`tests/ffi_spec.rs`)
+- [x] Fase 5 (Green Implement): Implementar módulo FFI (`src/ffi.rs`)
+- [x] Fase 6 (Refactor): Limpeza de memória e testes para ponteiros nulos
+- [x] Fase 7 (Mutation Test): Validação de mutação e resiliência em erros
+- [x] Fase 8 (Quality Gate): fmt, clippy sem avisos e testes verdes (100% Gosplan)
+- [x] Fase 9 (Finish & Close): Concluído (closes #22)
