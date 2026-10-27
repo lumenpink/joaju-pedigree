@@ -1,7 +1,7 @@
 # Especificação 23: Configurar Registry Gambi e Estabilizar Upload de Staticlib no CI
 
 - **ID do Ticket:** #23
-- **Status:** Em Progresso (DD-TDD)
+- **Status:** Concluído (DD-TDD) (closes #23)
 - **Autora:** Lumen
 - **Alinhamento:** GOST 1.5.0 (Rust)
 
@@ -14,7 +14,7 @@ Além disso, o upload de artefatos estáticos precisa de `--http1.1` e `--retry 
 ## 2. Requisitos Técnicos
 1. Atualizar `.forgejo/workflows/ci.yaml`:
    - Configurar `[registries.gambi]` e `[registries.lumen]` em `$HOME/.cargo/config.toml` e `$HOME/.cargo/credentials.toml`.
-   - Utilizar `cargo fmt -- --check` com `cargo fmt --check`.
+   - Utilizar `cargo fmt --check` em vez de `cargo fmt -- --check`.
    - Adicionar `--http1.1 --retry 3` nas chamadas de `curl -T` para Forgejo Generic Packages.
 
 2. Criar teste de validação de workflow em `tests/ci_workflow_spec.rs`.
@@ -28,9 +28,9 @@ Além disso, o upload de artefatos estáticos precisa de `--http1.1` e `--retry 
 - [x] Fase 1 (Ticket): #23
 - [x] Fase 2 (Branch): `fix/23-configurar-registry-gambi-ci`
 - [x] Fase 3 (Spec): Especificação técnica elaborada
-- [ ] Fase 4 (Red Test): Teste red validando configuração do CI
-- [ ] Fase 5 (Green Implement): Ajustes no arquivo `.forgejo/workflows/ci.yaml`
-- [ ] Fase 6 (Refactor): Limpeza de mensagens e parâmetros
-- [ ] Fase 7 (Mutation Test): Validação de caminhos de configuração
-- [ ] Fase 8 (Quality Gate): Testes e auditoria Gosplan 100%
-- [ ] Fase 9 (Finish & Close): Concluído (closes #23)
+- [x] Fase 4 (Red Test): Teste red validando configuração do CI (`tests/ci_workflow_spec.rs`)
+- [x] Fase 5 (Green Implement): Ajustes no arquivo `.forgejo/workflows/ci.yaml`
+- [x] Fase 6 (Refactor): Limpeza de mensagens e parâmetros
+- [x] Fase 7 (Mutation Test): Validação de caminhos de configuração
+- [x] Fase 8 (Quality Gate): Testes e auditoria Gosplan 100%
+- [x] Fase 9 (Finish & Close): Concluído (closes #23)
