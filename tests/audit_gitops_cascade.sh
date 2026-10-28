@@ -47,7 +47,7 @@ if ! grep -q 'token = "Bearer' "$WORKFLOW"; then
 fi
 
 if ! grep -q -E "cargo publish --registry (lumen|gambi)" "$WORKFLOW"; then
-  echo "✘ [FALHA] $WORKFLOW nao publica no registry soberano (lumen/gambi)!"
+  echo "✘ [FALHA] $WORKFLOW nao publica no registry (lumen/gambi)!"
   exit 1
 fi
 
