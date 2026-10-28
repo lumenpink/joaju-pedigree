@@ -32,14 +32,15 @@ jobs:
           fi
           rustup component add rustfmt clippy 2>/dev/null || true
 
-      - name: "Configure Sovereign Cargo Registries"
+      - name: "Configure Cargo Registries"
         env:
           TOKEN: ${{ secrets.REGISTRY_TOKEN || secrets.GAMBI_2LP_IN_TOKEN || secrets.FORGEJO_TOKEN }}
         run: |
           mkdir -p "$HOME/.cargo"
           printf '[registries.gambi]\nindex = "sparse+https://gambi.2lp.in/api/packages/lumen/cargo/"\n' > "$HOME/.cargo/config.toml"
           if [ -n "$TOKEN" ]; then
-            printf '[registries.gambi]\ntoken = "%s"\n' "$TOKEN" > "$HOME/.cargo/credentials.toml"
+            RAW_TOKEN="${TOKEN#Bearer }"
+            printf '[registries.gambi]\ntoken = "Bearer %s"\n' "$RAW_TOKEN" > "$HOME/.cargo/credentials.toml"
           fi
 
       - name: "GitOps — Update Sovereign Satellite Dependencies"
@@ -88,17 +89,18 @@ jobs:
       - name: "Checkout repository"
         uses: actions/checkout@v4
 
-      - name: "Configure Sovereign Cargo Credentials"
+      - name: "Configure Cargo Credentials"
         env:
           TOKEN: ${{ secrets.REGISTRY_TOKEN || secrets.GAMBI_2LP_IN_TOKEN || secrets.FORGEJO_TOKEN }}
         run: |
           mkdir -p "$HOME/.cargo"
           printf '[registries.gambi]\nindex = "sparse+https://gambi.2lp.in/api/packages/lumen/cargo/"\n' > "$HOME/.cargo/config.toml"
           if [ -z "$TOKEN" ]; then
-            echo "::error::Nenhum token soberano configurado (REGISTRY_TOKEN / GAMBI_2LP_IN_TOKEN)."
+            echo "::error::Nenhum token configurado (REGISTRY_TOKEN / GAMBI_2LP_IN_TOKEN)."
             exit 1
           fi
-          printf '[registries.gambi]\ntoken = "%s"\n' "$TOKEN" > "$HOME/.cargo/credentials.toml"
+          RAW_TOKEN="${TOKEN#Bearer }"
+          printf '[registries.gambi]\ntoken = "Bearer %s"\n' "$RAW_TOKEN" > "$HOME/.cargo/credentials.toml"
 
       - name: "Publish Crate to Sovereign Cargo Registry"
         run: |
