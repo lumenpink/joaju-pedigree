@@ -111,10 +111,10 @@ jobs:
           PUBLISH_OUT=$(cargo publish --registry gambi --allow-dirty 2>&1) || {
             STATUS=$?
             if echo "$PUBLISH_OUT" | grep -q "already exists"; then
-              echo "::notice::Crate joaju-pedigree@${CANONICAL_VERSION} ja consta publicada no registry soberano."
+              echo "::notice::Crate joaju-pedigree@${CANONICAL_VERSION} ja consta publicada no registry canônico."
             else
               echo "$PUBLISH_OUT" >&2
-              echo "::error::Falha critica na publicacao da crate no registry soberano!"
+              echo "::error::Falha critica na publicacao da crate no registry canônico!"
               exit $STATUS
             fi
           }
@@ -124,7 +124,7 @@ jobs:
           TOKEN: ${{ secrets.REGISTRY_TOKEN || secrets.GAMBI_2LP_IN_TOKEN || secrets.FORGEJO_TOKEN }}
         run: |
           if [ -z "$TOKEN" ]; then
-            echo "::error::Token soberano ausente para publicacao de Generic Packages!"
+            echo "::error::Token canônico ausente para publicacao de Generic Packages!"
             exit 1
           fi
           VERSION=$(head -n 1 VERSION | cut -d'+' -f1 | tr -d ' \r\n')
@@ -162,7 +162,7 @@ jobs:
             curl -s -X POST \
               -H "Authorization: token $CODEBERG_TOKEN" \
               -H "Content-Type: application/json" \
-              "https://codeberg.org/api/v1/repos/lumenpink/joaju/actions/workflows/ci.yaml/dispatches" \
+              "https://codeberg.org/api/v1/repos/lumenpink/joaju/actions/workflows/ci.yml/dispatches" \
               -d '{"ref": "main"}' || true
             echo "✔ Disparo enviado para joaju com sucesso."
           else
