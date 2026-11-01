@@ -18,6 +18,10 @@ fn test_ci_workflow_contains_gambi_registry_and_http1() {
         "Do not declare duplicate registry with same URL to avoid cargo collision"
     );
     assert!(
+        ci_yaml.contains("generic/joaju-pedigree-static/latest/${DEST_NAME}"),
+        "CI workflow must publish staticlibs under latest alias"
+    );
+    assert!(
         !ci_yaml.contains("libjoaju_pedigree-x86_64-linux.a\" || true"),
         "Upload must fail strictly without masking errors with '|| true'"
     );
