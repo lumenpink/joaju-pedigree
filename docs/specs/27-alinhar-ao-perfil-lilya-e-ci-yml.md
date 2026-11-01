@@ -13,3 +13,9 @@ Alinhar o repositório `joaju-pedigree` com o perfil `lilya` (`https://lilya.2lp
 ## 3. Critérios de Aceitação
 - Testes unitários e auditorias de conformidade aprovados.
 - 100% de conformidade com `cccp check --strict`.
+
+
+## 4. Conclusão da Fase 9
+- Workflow renomeado para `.forgejo/workflows/ci.yml`.
+- README.md condensado para 41 linhas (docs detalhados em docs/ARCHITECTURE.md).
+- Perfil GOST alinhado para Lilya e conformidade 100%.
