@@ -8,10 +8,10 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
-WORKFLOW=".forgejo/workflows/ci.yaml"
+WORKFLOW=".forgejo/workflows/ci.yml"
 
-if [ -f ".forgejo/workflows/publish.yaml" ]; then
-  echo "✘ [FALHA] publish.yaml legado para crates.io ainda presente!"
+if [ -f ".forgejo/workflows/publish.yaml" ] || [ -f ".forgejo/workflows/publish.yml" ]; then
+  echo "✘ [FALHA] publish legado para crates.io ainda presente!"
   exit 1
 fi
 
@@ -61,7 +61,7 @@ if ! grep -q "CANONICAL_VERSION" "$WORKFLOW"; then
   exit 1
 fi
 
-if ! grep -q "repos/lumenpink/joaju/actions/workflows/ci.yaml/dispatches" "$WORKFLOW"; then
+if ! grep -q "repos/lumenpink/joaju/actions/workflows/ci.yml/dispatches" "$WORKFLOW"; then
   echo "✘ [FALHA] $WORKFLOW nao dispara a esteira downstream do joaju!"
   exit 1
 fi

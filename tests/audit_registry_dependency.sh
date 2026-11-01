@@ -33,7 +33,7 @@ FAILED=0
 check_not_present 'path = "../joaju-csv"' "Ausência de path local relativo para joaju-csv" || FAILED=1
 
 # 2. Presença explícita do registro lumen
-check_present 'registry = "lumen"' "Dependência associada ao registro soberano lumen" || FAILED=1
+check_present 'registry = "lumen"' "Dependência associada ao registro canônico lumen" || FAILED=1
 
 # 3. Verificação de lockfile e índice esparso
 echo "=== [INDEX] Verificação do Lockfile Soberano ==="
@@ -56,4 +56,4 @@ if [ $FAILED -ne 0 ]; then
     exit 1
 fi
 
-echo "✔ [GREEN TEST] Auditoria aprovada: dependência desacoplada e apontada para o registro soberano."
+echo "✔ [GREEN TEST] Auditoria aprovada: dependência desacoplada e apontada para o registro canônico."
