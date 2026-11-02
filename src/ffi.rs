@@ -4,6 +4,14 @@ use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 use std::ptr;
 
+const C_VERSION_BYTES: &[u8] = concat!(env!("CARGO_PKG_VERSION"), "\0").as_bytes();
+
+/// Returns the library SemVer string as a null-terminated static C string.
+#[no_mangle]
+pub extern "C" fn joaju_pedigree_version() -> *const c_char {
+    C_VERSION_BYTES.as_ptr() as *const c_char
+}
+
 /// C-ABI function to render pedigree markdown code blocks to SVG.
 ///
 /// Returns `0` on success and populates `out_format` and `out_svg`.

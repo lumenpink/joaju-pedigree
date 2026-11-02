@@ -44,8 +44,11 @@ pub use crate::kinship::{compute_kinship_matrix, KinshipMatrix};
 pub use crate::layout::{LayoutOptions, PedLayout};
 pub use crate::render::{render_svg, AutoLegendMode, ClinicalSymbol, RenderOptions};
 
+/// Canonical SemVer version of the crate.
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 pub fn version() -> &'static str {
-    env!("CARGO_PKG_VERSION")
+    VERSION
 }
 
 #[cfg(test)]
