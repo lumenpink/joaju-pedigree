@@ -25,4 +25,12 @@ fn test_ci_workflow_contains_gambi_registry_and_http1() {
         !ci_yaml.contains("libjoaju_pedigree-x86_64-linux.a\" || true"),
         "Upload must fail strictly without masking errors with '|| true'"
     );
+    assert!(
+        !ci_yaml.contains("codeberg.org"),
+        "Legacy Codeberg dispatch must be completely removed"
+    );
+    assert!(
+        ci_yaml.contains("http://127.0.0.1:4040/api/cascade/dispatch"),
+        "CI workflow must notify Kombinat cascade daemon on release"
+    );
 }
