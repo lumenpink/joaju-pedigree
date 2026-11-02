@@ -43,23 +43,6 @@ jobs:
             printf '[registries.gambi]\ntoken = "Bearer %s"\n' "$RAW_TOKEN" > "$HOME/.cargo/credentials.toml"
           fi
 
-      - name: "GitOps — Update Sovereign Satellite Dependencies"
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          echo "-> GitOps dispatch recebido: atualizando joaju-csv a partir do registry gambi..."
-          cargo update -p joaju-csv || cargo update
-          if ! git diff --quiet Cargo.lock; then
-            echo "-> Alteracoes detectadas em Cargo.lock. Commitando..."
-            git config user.name "Lumen Pink (Baquara)"
-            git config user.email "hi@lumen.pink"
-            git commit -m "chore(deps): atualizar joaju-csv do registry gambi [skip ci]"
-            if [ -n "${{ secrets.CODEBERG_TOKEN }}" ]; then
-              git push "https://x-access-token:${{ secrets.CODEBERG_TOKEN }}@codeberg.org/lumenpink/joaju-pedigree.git" main || true
-            fi
-          else
-            echo "-> Nenhuma alteracao em Cargo.lock detectada."
-          fi
-
       - name: "Format Check"
         run: cargo fmt --check
 
@@ -79,7 +62,7 @@ jobs:
           fi
 
   publish-and-cascade:
-    name: "Publish Sovereign Crate & Cascade Downstream"
+    name: "Publish Canonical Crate & Cascade Downstream"
     runs-on: ubuntu-latest
     container:
       image: gambi.2lp.in/lumen/gost-ci-cross:latest
@@ -102,7 +85,7 @@ jobs:
           RAW_TOKEN="${TOKEN#Bearer }"
           printf '[registries.gambi]\ntoken = "Bearer %s"\n' "$RAW_TOKEN" > "$HOME/.cargo/credentials.toml"
 
-      - name: "Publish Crate to Sovereign Cargo Registry"
+      - name: "Publish Crate to Canonical Cargo Registry"
         run: |
           CANONICAL_VERSION=$(head -n 1 VERSION | tr -d ' \r\n')
           echo "-> Sincronizando Cargo.toml para a versao canonica: $CANONICAL_VERSION"
@@ -165,18 +148,12 @@ jobs:
             fi
           done
 
-      - name: "GitOps Cascade — Dispatch Downstream joaju"
-        env:
-          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+      - name: "Notify Kombinat Daemon of Release Cascade"
         run: |
-          if [ -n "$CODEBERG_TOKEN" ]; then
-            echo "-> Notificando consumidor downstream (joaju)..."
-            curl -s -X POST \
-              -H "Authorization: token $CODEBERG_TOKEN" \
-              -H "Content-Type: application/json" \
-              "https://codeberg.org/api/v1/repos/lumenpink/joaju/actions/workflows/ci.yml/dispatches" \
-              -d '{"ref": "main"}' || true
-            echo "✔ Disparo enviado para joaju com sucesso."
-          else
-            echo "CODEBERG_TOKEN ausente, pulando disparo downstream."
-          fi
+          VERSION=$(head -n 1 VERSION | cut -d'+' -f1 | tr -d ' \r\n')
+          echo "★ Notificando Kombinat da publicação de joaju-pedigree@${VERSION}..."
+          curl -s -X POST http://127.0.0.1:4040/api/cascade/dispatch \
+            -H "Content-Type: application/json" \
+            -d "{\"package\": \"joaju-pedigree\", \"version\": \"${VERSION}\"}" || {
+            echo "::warning::Falha ao contatar Kombinat daemon em 127.0.0.1:4040. Continuando sem abortar CI."
+          }

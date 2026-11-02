@@ -61,8 +61,13 @@ if ! grep -q "CANONICAL_VERSION" "$WORKFLOW"; then
   exit 1
 fi
 
-if ! grep -q "repos/lumenpink/joaju/actions/workflows/ci.yml/dispatches" "$WORKFLOW"; then
-  echo "✘ [FALHA] $WORKFLOW nao dispara a esteira downstream do joaju!"
+if ! grep -q "http://127.0.0.1:4040/api/cascade/dispatch" "$WORKFLOW"; then
+  echo "✘ [FALHA] $WORKFLOW nao notifica o Kombinat daemon!"
+  exit 1
+fi
+
+if grep -q "codeberg.org" "$WORKFLOW"; then
+  echo "✘ [FALHA] $WORKFLOW ainda contem referencias ao Codeberg legado!"
   exit 1
 fi
 
